@@ -13,20 +13,34 @@ import starling.renderer.BatchRenderer;
 import starling.renderer.BatchRendererUtil;
 import starling.renderer.RenderingSettings;
 
+/**
+ * Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list.
+ * Useful for creating custom display objects.
+ */
 public class BatchRendererWrapper extends DisplayObject {
     protected var _renderer:BatchRenderer;
-    protected var _renderingSettings:RenderingSettings;
+    private var _premultipliedAlpha:Boolean;
 
     private var _ownsRenderer:Boolean;
     private var _positionID:int;
 
-    public function BatchRendererWrapper(renderer:BatchRenderer, vertexPositionID:int = 0, ownsRenderer:Boolean = false) {
-        _renderer       = renderer;
-        _positionID     = vertexPositionID;
-        _ownsRenderer   = ownsRenderer;
-
-        _renderingSettings = createRenderingSettings(_renderer);
+    /**
+     * Creates a new wrapper.
+     *
+     * @param renderer              BatchRenderer displayed by this wrapper
+     * @param premultipliedAlpha    does renderer use premultiplied alpha?, @default false
+     * @param vertexPositionID      which vertex attribute index does renderer use for 2D position data (FLOAT_2: x, y), @default 0
+     * @param ownsRenderer          if set to true the renderer will be disposed along with this object, @default true
+     */
+    public function BatchRendererWrapper(renderer:BatchRenderer, premultipliedAlpha:Boolean = false, vertexPositionID:int = 0, ownsRenderer:Boolean = true) {
+        _renderer           = renderer;
+        _positionID         = vertexPositionID;
+        _ownsRenderer       = ownsRenderer;
+        _premultipliedAlpha = premultipliedAlpha;
     }
+
+    public function get premultipliedAlpha():Boolean { return _premultipliedAlpha; }
+    public function set premultipliedAlpha(value:Boolean):void { _premultipliedAlpha = value; }
 
     override public function dispose():void {
         if(_ownsRenderer) _renderer.dispose();
@@ -42,17 +56,8 @@ public class BatchRendererWrapper extends DisplayObject {
         return BatchRendererUtil.getGeometryBounds(_renderer, _positionID, 0, -1, resultRect, transformationMatrix);
     }
 
-    override public function set blendMode(value:String):void {
-        super.blendMode                 = value;
-        _renderingSettings.blendMode    = blendMode;
-    }
-
     override public function render(support:RenderSupport, parentAlpha:Number):void {
-        _renderer.renderToBackBuffer(support, _renderingSettings);
-    }
-
-    protected function createRenderingSettings(renderer:BatchRenderer):RenderingSettings {
-        return new RenderingSettings();
+        _renderer.renderToBackBuffer(support, _premultipliedAlpha);
     }
 }
 }

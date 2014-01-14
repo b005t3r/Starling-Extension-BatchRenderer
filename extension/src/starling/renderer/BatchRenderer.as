@@ -61,7 +61,7 @@ public class BatchRenderer extends EasierAGAL {
 
     private var _currentProgramType:int;
 
-    public function renderToBackBuffer(support:RenderSupport, settings:RenderingSettings):void {
+    public function renderToBackBuffer(support:RenderSupport, premultipliedAlpha:Boolean):void {
         var context:Context3D = Starling.context;
 
         if(context == null)
@@ -78,7 +78,7 @@ public class BatchRenderer extends EasierAGAL {
         support.raiseDrawCount(); // (2)
 
         // apply the current blendmode (4)
-        support.applyBlendMode(settings.premultipliedAlpha);
+        support.applyBlendMode(premultipliedAlpha);
 
         // activate program (shader) and set the required buffers, constants, texture
         context.setProgram(upload(context));
