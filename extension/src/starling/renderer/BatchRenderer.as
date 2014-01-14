@@ -30,6 +30,7 @@ import starling.renderer.constant.RegisterConstant;
 import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
 import starling.textures.Texture;
+import starling.utils.Color;
 import starling.utils.MatrixUtil;
 
 use namespace renderer_internal;
@@ -104,8 +105,14 @@ public class BatchRenderer extends EasierAGAL {
         if(_buffersDirty)
             createBuffers(context);
 
-        // render to output texture
+        // render to output texture and clear it
         context.setRenderToTexture(outputTexture.base);
+        context.clear(
+            Color.getRed(settings.clearColor) / 255.0,
+            Color.getGreen(settings.clearColor) / 255.0,
+            Color.getBlue(settings.clearColor) / 255.0,
+            settings.clearAlpha
+        );
 
         // setup output regions for rendering and (optionally) transform input geometries
         var m:Matrix3D = setOrthographicProjection(0, 0, outputTexture.nativeWidth, outputTexture.nativeHeight, settings.inputTransform);
@@ -428,6 +435,7 @@ public class BatchRenderer extends EasierAGAL {
         _vertexConstants.length     = 0;
         _fragmentConstants.length   = 0;
 
+        count = _componentConstants.length;
         for(i = 0; i < count; ++i) {
             var compConstant:ComponentConstant = _componentConstants[i];
 
@@ -443,6 +451,8 @@ public class BatchRenderer extends EasierAGAL {
                 : _vertexConstants.length / 4 + 1
             ;
 
+            _vertexConstants.length = vertexRegs * 4;
+
             context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, vertexIndex, _vertexConstants, vertexRegs);
         }
 
@@ -451,6 +461,8 @@ public class BatchRenderer extends EasierAGAL {
                 ? _fragmentConstants.length / 4
                 : _fragmentConstants.length / 4 + 1
             ;
+
+            _fragmentConstants.length = fragmentRegs * 4;
 
             context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, fragmentIndex, _fragmentConstants, fragmentRegs);
         }
@@ -503,6 +515,3 @@ public class BatchRenderer extends EasierAGAL {
     }
 }
 }
-
-
-

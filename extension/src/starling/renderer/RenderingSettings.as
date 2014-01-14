@@ -17,6 +17,8 @@ public class RenderingSettings {
     private var _clippingEnabled:Boolean        = false;
     private var _inputTransform:Matrix          = new Matrix();
     private var _inputTransformed:Boolean       = false;
+    private var _clearColor:uint                = 0x000000;
+    private var _clearAlpha:Number              = 0.0;
 
     public function get premultipliedAlpha():Boolean { return _premultipliedAlpha; }
     public function set premultipliedAlpha(value:Boolean):void { _premultipliedAlpha = value; }
@@ -42,5 +44,11 @@ public class RenderingSettings {
         _inputTransformed = true;
         _inputTransform.identity();
     }
+
+    public function get clearColor():uint { return _clearColor; }
+    public function set clearColor(value:uint):void { _clearColor = value; }
+
+    public function get clearAlpha():Number { return _clearAlpha; }
+    public function set clearAlpha(value:Number):void { _clearAlpha = value; }
 }
 }

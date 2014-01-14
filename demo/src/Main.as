@@ -25,7 +25,7 @@ public class Main extends Sprite {
         stage.scaleMode = StageScaleMode.NO_SCALE;
         stage.align = StageAlign.TOP_LEFT;
 
-        var starling:Starling = new Starling(MeshDemo, stage, null, null, Context3DRenderMode.AUTO, ["baselineExtended", "baseline", "baselineConstrained"]);
+        var starling:Starling = new Starling(SimpleDemo, stage, null, null, Context3DRenderMode.AUTO, ["baselineExtended", "baseline", "baselineConstrained"]);
         starling.simulateMultitouch = false;
         starling.enableErrorChecking = Capabilities.isDebugger;
         starling.antiAliasing = 10;

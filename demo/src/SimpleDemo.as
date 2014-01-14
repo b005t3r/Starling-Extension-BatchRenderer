@@ -40,10 +40,6 @@ public class SimpleDemo extends Sprite {
 
     private function onAddedToStage(event:Event):void {
         _renderTexture = new RenderTexture(1024, 1024, false);
-        _renderTexture.clear(0xeeeeee, 1.0);
-
-        _settings = new RenderingSettings();
-        _settings.blendMode     = BlendMode.NORMAL;
 
         _coloredRenderer = new ColoredGeometryRenderer();
 
@@ -70,9 +66,6 @@ public class SimpleDemo extends Sprite {
         _coloredRenderer.setVertexColor(vertex + 1, 0.0, 1.0, 0.0, 1.0);
         _coloredRenderer.setVertexColor(vertex + 2, 0.0, 0.0, 1.0, 0.0);
 
-        _settings.disableInputTransform();
-        _coloredRenderer.renderToTexture(_renderTexture, _settings);
-
         _texturedRenderer = new TexturedGeometryRenderer();
 
         _texturedRenderer.inputTexture = Texture.fromBitmap(new Bird());
@@ -93,27 +86,35 @@ public class SimpleDemo extends Sprite {
         m.scale(10, 10);
         m.translate(0, 220);
 
+        _settings               = new RenderingSettings();
+        _settings.blendMode     = BlendMode.NORMAL;
+        _settings.clearColor    = 0xcccccc;
+        _settings.clearAlpha    = 1.0;
+        _settings.blendMode     = BlendMode.NONE;
+
         _settings.enableInputTransform();
-        _settings.inputTransform.scale(5, 5);
+        _settings.inputTransform.scale(3, 3);
         _settings.inputTransform.translate(0, 30);
+
+        _settings.enableClipping(40, 120, 200, 100);
 
         _texturedRenderer.renderToTexture(_renderTexture, _settings);
 
-        // TODO: remove once fixed in Starling; starling render() method fix
+        // TODO: remove once fixed in Starling; starling render() method clears render target before setting a new one
         Starling.context.setRenderToBackBuffer();
 
         addChild(new Image(_renderTexture));
 
-        var d:BatchRendererWrapper = new BatchRendererWrapper(_coloredRenderer, 0);
-        d.alignPivot();
-        d.x += d.width / 2 + 10;
-        d.y += d.height / 2 + 10;
-        addChild(d);
+        var wrapper:BatchRendererWrapper = new BatchRendererWrapper(_coloredRenderer, 0);
+        wrapper.alignPivot();
+        wrapper.x += wrapper.width / 2 + 10;
+        wrapper.y += wrapper.height / 2 + 10;
+        addChild(wrapper);
 
-        var tween:Tween = new Tween(d, 1);
+        var tween:Tween = new Tween(wrapper, 3);
         tween.animate("rotation", Math.PI);
-        tween.animate("x", d.width / 2 + 100);
-        tween.animate("y", d.height / 2 + 100);
+        tween.animate("x", wrapper.width / 2 + 100);
+        tween.animate("y", wrapper.height / 2 + 100);
         tween.repeatCount = 0;
         tween.reverse = true;
         tween.transition = Transitions.EASE_IN_OUT;
