@@ -35,6 +35,34 @@ import starling.utils.MatrixUtil;
 
 use namespace renderer_internal;
 
+/**
+ * Renderer combines geometry data: vertex data such as position, uv, etc., triangle data, a shader program and
+ * (optionally) input textures.
+ *
+ * This class is meant to be subclassed and cannot be used as is. Subclass has to provide vertex and fragment
+ * shaders, as well as set up a vertex format (specify which indexes hold what kind of data) and provide geometry
+ * data matching the format (vertex data and triangle data).
+ *
+ * When subclassing, make sure to import 'renderer_internal' namespace (by 'use namespace renderer_internal:').
+ *
+ * Multiple geometries can be provided this way. They don't have to be quads - client decides on what geometry is
+ * to be rendered by providing a vertex format, vertex data and setting up triangles. Keep in mind that's up to you
+ * to decide what data each vertex holds. If you don't need UV, don't put them in your vertex format. If you want
+ * to sample multiple textures of different sizes, you can pass multiple sets of UVs - one for each texture.
+ *
+ * Renderer makes it easy to create custom shader programs. Vertex and Fragment shaders are created using EasierAGAL
+ * static methods and register/component objects (IRegister, IComponent, IField etc.) as well as protected
+ * methods provided by this class. Methods like: getComponentConstant(), getRegisterConstant(), getTextureSampler()
+ * and getVertexAttribute() make it possible not to rely on register indexes, but let you fetch given
+ * registers/components by providing a previously assigned name (i.e. you no longer have to access register 'va1'
+ * for vertex position, you can now call getVertexAttribute("position") without caring which register holds position).
+ *
+ * To make setting up geometry data easier, use methods of BatchRendererUtil static class.
+ *
+ * Contents of the renderer can be displayed onto a texture render target (by calling renderToTexture()) or the back
+ * buffer (by using Starling's RenderSupport class) - the later requires renderer to be wrapped into a
+ * BatchRendererWrapper instance (a custom DisplayObject class).
+ */
 public class BatchRenderer extends EasierAGAL {
     public static const PROJECTION_MATRIX:String            = "projectionMatrix";
 
@@ -59,8 +87,9 @@ public class BatchRenderer extends EasierAGAL {
     private var _registerConstants:Vector.<RegisterConstant>      = new <RegisterConstant>[];
     private var _componentConstants:Vector.<ComponentConstant>    = new <ComponentConstant>[];
 
-    private var _currentProgramType:int;
+    private var _currentProgramType:int = -1;
 
+    /** Renders geometry data to back buffer usign Starling's RenderSupport. */
     public function renderToBackBuffer(support:RenderSupport, premultipliedAlpha:Boolean):void {
         var context:Context3D = Starling.context;
 
@@ -96,6 +125,7 @@ public class BatchRenderer extends EasierAGAL {
         unsetVertexBuffers(context);
     }
 
+    /** Renders geometry data to texture. Clears the texture first (Stage3D requirement). */
     public function renderToTexture(outputTexture:Texture, settings:RenderingSettings):void {
         var context:Context3D = Starling.context;
 
@@ -138,6 +168,7 @@ public class BatchRenderer extends EasierAGAL {
         unsetVertexBuffers(context);
     }
 
+    /** Number of registered vertices. */
     public function get vertexCount():int { return _vertexRawData.length / _vertexFormat.totalSize; }
 
     override public function dispose():void {
@@ -147,14 +178,17 @@ public class BatchRenderer extends EasierAGAL {
         super.dispose();
     }
 
+    /** Provided a registered texture name, returns its sampler index. */
     renderer_internal function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
 
+    /** Returns a texture registered with the name provided. */
     renderer_internal function getInputTexture(name:String):Texture {
         var index:int = getInputTextureIndex(name);
 
         return index >= 0 ? _inputTextures[index] : null;
     }
 
+    /** Registers a new texture (or unregisters an old one, if null) using the name provided. */
     renderer_internal function setInputTexture(name:String, texture:Texture):void {
         var index:int = getInputTextureIndex(name);
 
@@ -174,6 +208,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     // also erases all vertices
+    /** Sets up vertex data. Calling this method is obligatory when subclassing. */
     renderer_internal function setVertexFormat(format:VertexFormat):void {
         _buffersDirty = true;
 
@@ -182,7 +217,11 @@ public class BatchRenderer extends EasierAGAL {
         _vertexFormat           = format;
     }
 
-    // returns first newly added vertex index
+    /**
+     * Adds a number of verices to this renderer and returns the first index added.
+     * These vertices are not yet part of any geometry - call addTriangle() and pass vertex indexes to build
+     * geometry segments.
+     */
     renderer_internal function addVertices(count:int):int {
         _buffersDirty = true;
 
@@ -193,6 +232,7 @@ public class BatchRenderer extends EasierAGAL {
         return firstIndex;
     }
 
+    /** Adds a new triangle out of registered vertices. */
     renderer_internal function addTriangle(v1:int, v2:int, v3:int):void {
         _buffersDirty = true;
 
@@ -201,6 +241,14 @@ public class BatchRenderer extends EasierAGAL {
         _triangleData[_triangleData.length] = v3;
     }
 
+    /**
+     * Returns vertex data associated with a given vertex.
+     *
+     * @param vertex    vertex index
+     * @param id        data id ('va' register index), @see VertexFormat
+     * @param data      optional vector to hold up to 4 Numbers representing the data
+     * @return          vector holding the vertex data
+     */
     renderer_internal function getVertexData(vertex:int, id:int, data:Vector.<Number> = null):Vector.<Number> {
         var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
         var size:int    = _vertexFormat.getSize(id);
@@ -213,6 +261,17 @@ public class BatchRenderer extends EasierAGAL {
         return data;
     }
 
+    /**
+     * Sets data associated with the given vertex.
+     * Keep in mind only as many components will be used, as required by the VertexFormat set.
+     *
+     * @param vertex    vertex index
+     * @param id        data id ('va' register index), @see VertexFormat
+     * @param x         first component value
+     * @param y         second component value
+     * @param z         third component value
+     * @param w         fourth component value
+     */
     renderer_internal function setVertexData(vertex:int, id:int, x:Number, y:Number = NaN, z:Number = NaN, w:Number = NaN):void {
         var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
         var size:int    = _vertexFormat.getSize(id);
@@ -230,14 +289,18 @@ public class BatchRenderer extends EasierAGAL {
         }
     }
 
+    /** Adds a new constant which will be passed to the shader program (Vertex or Fragment) as one, 4-component
+     * register. */
     renderer_internal function addRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
         _registerConstants[_registerConstants.length] = new RegisterConstant(name, type, x, y, z, w);
     }
 
+    /** Adds a new constant which will be passed to the shader program (Vertex or Fragment) as a component. */
     renderer_internal function addComponentConstant(name:String, type:int, value:Number):void {
         _componentConstants[_componentConstants.length] = new ComponentConstant(name, type, value);
     }
 
+    /** Removes previously added register constant. */
     renderer_internal function removeRegisterConstant(name:String, type:int):void {
         var index:int = getRegisterConstantIndex(name, type);
 
@@ -246,6 +309,7 @@ public class BatchRenderer extends EasierAGAL {
         _registerConstants.splice(index, 1);
     }
 
+    /** Removes previously added component constant. */
     renderer_internal function removeComponentConstant(name:String, type:int, value:Number):void {
         var index:int = getComponentConstantIndex(name, type);
 
@@ -254,6 +318,7 @@ public class BatchRenderer extends EasierAGAL {
         _componentConstants.splice(index, 1);
     }
 
+    /** Modifies previously added register constant's values. */
     renderer_internal function modifyRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
         var index:int                   = getRegisterConstantIndex(name, type);
         var constant:RegisterConstant   = _registerConstants[index];
@@ -261,6 +326,7 @@ public class BatchRenderer extends EasierAGAL {
         constant.setValues(x, y, z, w);
     }
 
+    /** Modifies previously added component constant's values. */
     renderer_internal function modifyComponentConstant(name:String, type:int, value:Number):void {
         var index:int                   = getComponentConstantIndex(name, type);
         var constant:ComponentConstant  = _componentConstants[index];
@@ -268,6 +334,7 @@ public class BatchRenderer extends EasierAGAL {
         constant.value = value;
     }
 
+    /** Returns a index associated with a register constant with the given name. */
     renderer_internal function getRegisterConstantIndex(name:String, type:int):int {
         var count:int = _registerConstants.length;
         for(var i:int = 0; i < count; i++) {
@@ -282,7 +349,8 @@ public class BatchRenderer extends EasierAGAL {
         return -1;
     }
 
-    protected function getComponentConstantIndex(name:String, type:int):int {
+    /** Returns a index associated with a component constant with the given name. */
+    renderer_internal function getComponentConstantIndex(name:String, type:int):int {
         var count:int = _componentConstants.length;
         for(var i:int = 0; i < count; i++) {
             var constant:ComponentConstant = _componentConstants[i];
@@ -296,6 +364,7 @@ public class BatchRenderer extends EasierAGAL {
         return -1;
     }
 
+    /** Returns a register holding a constant with the given name. Must be called inside a vertex or fragment shader. */
     protected function getRegisterConstant(name:String):IRegister {
         if(_currentProgramType == ConstantType.VERTEX && name == PROJECTION_MATRIX)
             return CONST[0];
@@ -320,6 +389,7 @@ public class BatchRenderer extends EasierAGAL {
         return null;
     }
 
+    /** Returns a component holding a constant with the given name. Must be called inside a vertex or fragment shader. */
     protected function getComponentConstant(name:String):IComponent {
         var index:int = 0;
         var count:int = _componentConstants.length;
@@ -354,6 +424,7 @@ public class BatchRenderer extends EasierAGAL {
         return null;
     }
 
+    /** Returns a register holding a vertex attribute with the given name. Must be called inside a vertex shader. */
     protected function getVertexAttribute(name:String):IRegister {
         if(_currentProgramType != ConstantType.VERTEX)
             throw new IllegalOperationError("attribute registers are available for vertex programs only");
@@ -363,25 +434,36 @@ public class BatchRenderer extends EasierAGAL {
         return ATTRIBUTE[index];
     }
 
+    /** Returns a texture sampler used to read texture with the given name. Must be called inside a fragment shader. */
     protected function getTextureSampler(textureName:String):ISampler {
+        if(_currentProgramType != ConstantType.FRAGMENT)
+            throw new IllegalOperationError("texture samplers are available for vertex programs only");
+
         var index:int = getInputTextureIndex(textureName);
 
         return SAMPLER[index];
     }
 
+    /** Abstract method. Override to provide vertex shader code. */
     protected function vertexShaderCode():void { throw new Error("abstract method call"); }
+
+    /** Abstract method. Override to provide fragment shader code. */
     protected function fragmentShaderCode():void { throw new Error("abstract method call"); }
 
     override protected function _vertexShader():void {
         _currentProgramType = ConstantType.VERTEX;
 
         vertexShaderCode();
+
+        _currentProgramType = -1;
     }
 
     override protected function _fragmentShader():void {
         _currentProgramType = ConstantType.FRAGMENT;
 
         fragmentShaderCode();
+
+        _currentProgramType = -1;
     }
 
     /** Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers. */
