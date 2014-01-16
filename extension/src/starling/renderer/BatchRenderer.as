@@ -7,6 +7,7 @@ package starling.renderer {
 import com.barliesque.agal.EasierAGAL;
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
+import com.barliesque.agal.ISampler;
 
 import flash.display3D.Context3D;
 import flash.display3D.Context3DProgramType;
@@ -19,8 +20,10 @@ import flash.errors.IllegalOperationError;
 import flash.geom.Matrix;
 import flash.geom.Matrix3D;
 import flash.geom.Matrix3D;
+import flash.geom.Rectangle;
 
 import starling.core.Starling;
+import starling.display.BlendMode;
 import starling.errors.MissingContextError;
 
 import starling.renderer.constant.ComponentConstant;
@@ -33,23 +36,25 @@ import starling.textures.Texture;
 import starling.utils.MatrixUtil;
 
 public class BatchRenderer extends EasierAGAL {
+    public static const PROJECTION_MATRIX:String            = "projectionMatrix";
+
     private static var _projectionMatrix:Matrix             = new Matrix();
+    private static var _helperMatrix:Matrix                 = new Matrix();
     private static var _matrix3D:Matrix3D                   = new Matrix3D();
     private static var _vertexConstants:Vector.<Number>     = new <Number>[];
     private static var _fragmentConstants:Vector.<Number>   = new <Number>[];
 
     private var _inputTextures:Vector.<Texture>     = new <Texture>[];
     private var _inputTextureNames:Vector.<String>  = new <String>[];
-    private var _outputTexture:Texture              = null;
 
     private var _vertexBuffer:VertexBuffer3D        = null;
     private var _indexBuffer:IndexBuffer3D          = null;
-    private var _buffersDirty:Boolean               = false;
+    private var _buffersDirty:Boolean               = true;
 
     // vertex specific variables will be changed to VertexData once it's ready for customisation
     private var _vertexRawData:Vector.<Number>      = new <Number>[];
     private var _vertexFormat:VertexFormat          = null;
-    private var _triangleData:Vector.<int>          = new <int>[];
+    private var _triangleData:Vector.<uint>         = new <uint>[];
 
     private var _registerConstants:Vector.<RegisterConstant>      = new <RegisterConstant>[];
     private var _componentConstants:Vector.<ComponentConstant>    = new <ComponentConstant>[];
@@ -82,9 +87,6 @@ public class BatchRenderer extends EasierAGAL {
         }
     }
 
-    public function get outputTexture():Texture { return _outputTexture; }
-    public function set outputTexture(value:Texture):void { _outputTexture = value; }
-
     // also erases all vertices
     public function setVertexFormat(format:VertexFormat):void {
         _vertexRawData.length   = 0;
@@ -96,7 +98,7 @@ public class BatchRenderer extends EasierAGAL {
 
     // returns first newly added vertex index
     public function addVertices(count:int):int {
-        var firstIndex:int      = vertexCount - 1;
+        var firstIndex:int      = vertexCount;
         _vertexRawData.length  += _vertexFormat.totalSize * count;
 
         return firstIndex;
@@ -203,91 +205,46 @@ public class BatchRenderer extends EasierAGAL {
         return -1;
     }
 
-    public function render():void {
-//        if(_output == null)
-//            throw new UninitializedError("output texture must be set");
-//
-//        if(_input.root == _output.root)
-//            throw new UninitializedError("input cannot be used as output");
-
+    public function render(outputTexture:Texture, premultipliedAlpha:Boolean = false, blendMode:String = BlendMode.NORMAL, clipRect:Rectangle = null, inputTransform:Matrix = null):void {
         var context:Context3D = Starling.context;
 
         if(context == null)
             throw new MissingContextError();
 
-//        var pma:Boolean = mVertexData.premultipliedAlpha;
-
         if(_buffersDirty)
-            createBuffers();
-
-        //sRenderAlpha[0] = sRenderAlpha[1] = sRenderAlpha[2] = pma ? alpha : 1.0;
-        //sRenderAlpha[3] = alpha;
-
-//        var rootWidth:Number  = _output.root.width;
-//        var rootHeight:Number = _output.root.height;
-//
-//        if(clipRect == null)    _clipRect.setTo(0, 0, _output.width, _output.height);
-//        else                    _clipRect.setTo(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
+            createBuffers(context);
 
         // render to output texture
-        //_renderSupport.renderTarget = _output;
-        if(_outputTexture != null)  context.setRenderToTexture(_outputTexture.base);
-        else                        context.setRenderToBackBuffer();
+        context.setRenderToTexture(outputTexture.base);
 
-        //if(clearOutput)
-        //    _renderSupport.clear();
-        context.clear();
-
-        // setup output regions for rendering
-        //_renderSupport.loadIdentity();
-        //_renderSupport.setOrthographicProjection(0, 0, rootWidth, rootHeight);
-//        _renderSupport.pushClipRect(_clipRect);
-       var m:Matrix3D = setOrthographicProjection(0, 0, 800, 600);
+        // setup output regions for rendering and (optionally) transform input geometries
+        var m:Matrix3D = setOrthographicProjection(0, 0, outputTexture.nativeWidth, outputTexture.nativeHeight, inputTransform);
+        context.setScissorRectangle(clipRect);
 
         // set blend mode
-//        _renderSupport.blendMode = blendMode;
-//        _renderSupport.applyBlendMode(pma);
-
-        // transform input
-//        if(matrix != null)
-//            _renderSupport.prependMatrix(matrix);
+        var blendFactors:Array = BlendMode.getBlendFactors(blendMode, premultipliedAlpha);
+        Starling.context.setBlendFactors(blendFactors[0], blendFactors[1]);
 
         // activate program (shader) and set the required buffers, constants, texture
         context.setProgram(upload(context));
 
-        context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); //vc0
-
-        setProgramConstants(context, 4, 0);
-
-        //context.setTextureAt(0, _input.base); // fs0
+        setVertexBuffers(context);
         setInputTextures(context);
 
-        //context.setVertexBufferAt(0, mVertexBuffer, VertexData.POSITION_OFFSET, Context3DVertexBufferFormat.FLOAT_2); // va0 - position
-        //context.setVertexBufferAt(1, mVertexBuffer, VertexData.TEXCOORD_OFFSET, Context3DVertexBufferFormat.FLOAT_2); // va1 - UV
-
-        //if(_passUVRangeInGeometry)
-        //    context.setVertexBufferAt(2, mVertexBuffer, ExtendedVertexData.UV_RANGE_OFFSET, Context3DVertexBufferFormat.FLOAT_4); // va2 - UV range
-        setVertexBuffers(context);
+        context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); //vc0
+        setProgramConstants(context, 4, 0);
 
         // render
-        //_shader.activate(context);
         context.drawTriangles(_indexBuffer, 0, _triangleData.length / 3);
-        //_shader.deactivate(context);
 
-        // reset buffers
-        //context.setTextureAt(0, null);
-        //context.setVertexBufferAt(0, null);
-        //context.setVertexBufferAt(1, null);
-        //if(_passUVRangeInGeometry)
-        //    context.setVertexBufferAt(2, null);
         unsetInputTextures(context);
         unsetVertexBuffers(context);
-
-//        _renderSupport.renderTarget = null;
-//        _renderSupport.popClipRect();
     }
 
     protected function getRegisterConstant(name:String):IRegister {
+        if(_currentProgramType == ConstantType.VERTEX && name == PROJECTION_MATRIX)
+            return CONST[0];
+
         var index:int = 0;
         var count:int = _registerConstants.length;
         for(var i:int = 0; i < count; i++) {
@@ -351,13 +308,14 @@ public class BatchRenderer extends EasierAGAL {
         return ATTRIBUTE[index];
     }
 
-    protected function vertexShaderCode():void {
-        throw new Error("abstract method call");
+    protected function getTextureSampler(textureName:String):ISampler {
+        var index:int = getInputTextureIndex(textureName);
+
+        return SAMPLER[index];
     }
 
-    protected function fragmentShaderCode():void {
-        throw new Error("abstract method call");
-    }
+    protected function vertexShaderCode():void { throw new Error("abstract method call"); }
+    protected function fragmentShaderCode():void { throw new Error("abstract method call"); }
 
     override protected function _vertexShader():void {
         _currentProgramType = ConstantType.VERTEX;
@@ -372,10 +330,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers. */
-    private function createBuffers():void {
-        var context:Context3D = Starling.context;
-        if (context == null) throw new MissingContextError();
-
+    private function createBuffers(context:Context3D):void {
         _buffersDirty = false;
 
         if (_vertexBuffer) _vertexBuffer.dispose();
@@ -385,16 +340,29 @@ public class BatchRenderer extends EasierAGAL {
         _vertexBuffer.uploadFromVector(_vertexRawData, 0, vertexCount);
 
         _indexBuffer = context.createIndexBuffer(_triangleData.length);
-        _indexBuffer.uploadFromVector(mIndexData, 0, _triangleData.length);
+        _indexBuffer.uploadFromVector(_triangleData, 0, _triangleData.length);
     }
 
-    private function setOrthographicProjection(x:Number, y:Number, width:Number, height:Number):Matrix3D {
-        _projectionMatrix.setTo(
-            2.0 / width, 0, 0,
-            -2.0 / height, -(2 * x + width) / width, (2 * y + height) / height
-        );
+    private function setOrthographicProjection(x:Number, y:Number, width:Number, height:Number, transform:Matrix = null):Matrix3D {
+        if(transform == null) {
+            _projectionMatrix.setTo(
+                2.0 / width, 0, 0,
+                -2.0 / height, -(2 * x + width) / width, (2 * y + height) / height
+            );
 
-        return MatrixUtil.convertTo3D(_projectionMatrix, _matrix3D);
+            return MatrixUtil.convertTo3D(_projectionMatrix, _matrix3D);
+        }
+        else {
+            _projectionMatrix.setTo(
+                2.0 / width, 0, 0,
+                -2.0 / height, -(2 * x + width) / width, (2 * y + height) / height
+            );
+
+            _helperMatrix.copyFrom(transform);
+            _helperMatrix.concat(_projectionMatrix);
+
+            return MatrixUtil.convertTo3D(_helperMatrix, _matrix3D);
+        }
     }
 
     private function setProgramConstants(context:Context3D, vertexIndex:int, fragmentIndex:int):void {

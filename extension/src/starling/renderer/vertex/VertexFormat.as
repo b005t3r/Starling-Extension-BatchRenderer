@@ -11,7 +11,7 @@ public class VertexFormat {
     private var _offsets:Vector.<int>   = new <int>[];
     private var _totalSize:int          = 0;
 
-    public function addProperty(name:String, size:int):VertexFormat {
+    public function addProperty(name:String, size:int):int {
         if(_names.indexOf(name) >= 0) throw new ArgumentError("property for name '" + name + "' already registered");
 
         _names[_names.length]       = name;
@@ -19,7 +19,7 @@ public class VertexFormat {
         _offsets[_offsets.length]   = _totalSize;
         _totalSize                 += size;
 
-        return this;
+        return _names.length - 1;
     }
 
     public function getPropertyIndex(name:String):int { return _names.indexOf(name); }
