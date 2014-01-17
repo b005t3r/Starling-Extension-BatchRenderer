@@ -4,6 +4,7 @@
  * Time: 13:48
  */
 package starling.renderer {
+
 import com.barliesque.agal.EasierAGAL;
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
@@ -12,28 +13,26 @@ import com.barliesque.agal.ISampler;
 import flash.display3D.Context3D;
 import flash.display3D.Context3DProgramType;
 import flash.display3D.Context3DVertexBufferFormat;
-
 import flash.display3D.IndexBuffer3D;
-
 import flash.display3D.VertexBuffer3D;
 import flash.errors.IllegalOperationError;
 import flash.geom.Matrix;
 import flash.geom.Matrix3D;
-import flash.geom.Matrix3D;
-import flash.geom.Rectangle;
+
+import starling.core.RenderSupport;
 
 import starling.core.Starling;
 import starling.display.BlendMode;
 import starling.errors.MissingContextError;
-
 import starling.renderer.constant.ComponentConstant;
-import starling.renderer.constant.ConstantType;
 import starling.renderer.constant.ConstantType;
 import starling.renderer.constant.RegisterConstant;
 import starling.renderer.vertex.VertexFormat;
-
+import starling.textures.Texture;
 import starling.textures.Texture;
 import starling.utils.MatrixUtil;
+
+use namespace renderer_internal;
 
 public class BatchRenderer extends EasierAGAL {
     public static const PROJECTION_MATRIX:String            = "projectionMatrix";
@@ -61,15 +60,95 @@ public class BatchRenderer extends EasierAGAL {
 
     private var _currentProgramType:int;
 
-    public function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
+    public function renderToBackBuffer(support:RenderSupport, settings:RenderingSettings):void {
+        var context:Context3D = Starling.context;
 
-    public function getInputTexture(name:String):Texture {
+        if(context == null)
+            throw new MissingContextError();
+
+        if(_buffersDirty)
+            createBuffers(context);
+
+        // always call this method when you write custom rendering code!
+        // it causes all previously batched quads/images to render.
+        support.finishQuadBatch(); // (1)
+
+        // make this call to keep the statistics display in sync.
+        support.raiseDrawCount(); // (2)
+
+        // apply the current blendmode (4)
+        support.applyBlendMode(settings.premultipliedAlpha);
+
+        // activate program (shader) and set the required buffers, constants, texture
+        context.setProgram(upload(context));
+
+        setVertexBuffers(context);
+        setInputTextures(context);
+
+        context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, support.mvpMatrix3D, true); // vc0-vc3
+        setProgramConstants(context, 4, 0);
+
+        // render
+        context.drawTriangles(_indexBuffer, 0, _triangleData.length / 3);
+
+        unsetInputTextures(context);
+        unsetVertexBuffers(context);
+    }
+
+    public function renderToTexture(outputTexture:Texture, settings:RenderingSettings):void {
+        var context:Context3D = Starling.context;
+
+        if(context == null)
+            throw new MissingContextError();
+
+        if(_buffersDirty)
+            createBuffers(context);
+
+        // render to output texture
+        context.setRenderToTexture(outputTexture.base);
+
+        // setup output regions for rendering and (optionally) transform input geometries
+        var m:Matrix3D = setOrthographicProjection(0, 0, outputTexture.nativeWidth, outputTexture.nativeHeight, settings.inputTransform);
+        context.setScissorRectangle(settings.clippingRectangle);
+
+        // set blend mode
+        var blendFactors:Array = BlendMode.getBlendFactors(settings.blendMode, settings.premultipliedAlpha);
+        Starling.context.setBlendFactors(blendFactors[0], blendFactors[1]);
+
+        // activate program (shader) and set the required buffers, constants, texture
+        context.setProgram(upload(context));
+
+        setVertexBuffers(context);
+        setInputTextures(context);
+
+        context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); // vc0-vc3
+        setProgramConstants(context, 4, 0);
+
+        // render
+        context.drawTriangles(_indexBuffer, 0, _triangleData.length / 3);
+
+        unsetInputTextures(context);
+        unsetVertexBuffers(context);
+    }
+
+    public function get vertexCount():int { return _vertexRawData.length / _vertexFormat.totalSize; }
+
+    override public function dispose():void {
+        if(_vertexBuffer != null) _vertexBuffer.dispose();
+        if(_indexBuffer != null) _indexBuffer.dispose();
+
+        super.dispose();
+    }
+
+    renderer_internal function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
+
+    renderer_internal function getInputTexture(name:String):Texture {
         var index:int = getInputTextureIndex(name);
 
         return index >= 0 ? _inputTextures[index] : null;
     }
 
-    public function setInputTexture(name:String, texture:Texture):void {
+    renderer_internal function setInputTexture(name:String, texture:Texture):void {
         var index:int = getInputTextureIndex(name);
 
         if(index >= 0) {
@@ -88,29 +167,34 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     // also erases all vertices
-    public function setVertexFormat(format:VertexFormat):void {
+    renderer_internal function setVertexFormat(format:VertexFormat):void {
+        _buffersDirty = true;
+
         _vertexRawData.length   = 0;
         _triangleData.length    = 0;
         _vertexFormat           = format;
     }
 
-    public function get vertexCount():int { return _vertexRawData.length / _vertexFormat.totalSize; }
-
     // returns first newly added vertex index
-    public function addVertices(count:int):int {
+    renderer_internal function addVertices(count:int):int {
+        _buffersDirty = true;
+
         var firstIndex:int      = vertexCount;
         _vertexRawData.length  += _vertexFormat.totalSize * count;
+
 
         return firstIndex;
     }
 
-    public function addTriangle(v1:int, v2:int, v3:int):void {
+    renderer_internal function addTriangle(v1:int, v2:int, v3:int):void {
+        _buffersDirty = true;
+
         _triangleData[_triangleData.length] = v1;
         _triangleData[_triangleData.length] = v2;
         _triangleData[_triangleData.length] = v3;
     }
 
-    public function getVertexData(vertex:int, id:int, data:Vector.<Number> = null):Vector.<Number> {
+    renderer_internal function getVertexData(vertex:int, id:int, data:Vector.<Number> = null):Vector.<Number> {
         var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
         var size:int    = _vertexFormat.getSize(id);
 
@@ -122,16 +206,16 @@ public class BatchRenderer extends EasierAGAL {
         return data;
     }
 
-    public function setVertexData(vertex:int, id:int, x:Number, y:Number = NaN, z:Number = NaN, w:Number = NaN):void {
+    renderer_internal function setVertexData(vertex:int, id:int, x:Number, y:Number = NaN, z:Number = NaN, w:Number = NaN):void {
         var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
         var size:int    = _vertexFormat.getSize(id);
 
         //noinspection FallthroughInSwitchStatementJS
         switch(size) {
-            case 4: _vertexRawData[index + 3] = w;
-            case 3: _vertexRawData[index + 2] = z;
-            case 2: _vertexRawData[index + 1] = y;
-            case 1: _vertexRawData[index    ] = x;
+            case 4: if(_vertexRawData[index + 3] != w) { _buffersDirty = true; _vertexRawData[index + 3] = w; }
+            case 3: if(_vertexRawData[index + 2] != z) { _buffersDirty = true; _vertexRawData[index + 2] = z; }
+            case 2: if(_vertexRawData[index + 1] != y) { _buffersDirty = true; _vertexRawData[index + 1] = y; }
+            case 1: if(_vertexRawData[index    ] != x) { _buffersDirty = true; _vertexRawData[index    ] = x; }
                 break;
 
             default:
@@ -139,15 +223,15 @@ public class BatchRenderer extends EasierAGAL {
         }
     }
 
-    public function addRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
+    renderer_internal function addRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
         _registerConstants[_registerConstants.length] = new RegisterConstant(name, type, x, y, z, w);
     }
 
-    public function addComponentConstant(name:String, type:int, value:Number):void {
+    renderer_internal function addComponentConstant(name:String, type:int, value:Number):void {
         _componentConstants[_componentConstants.length] = new ComponentConstant(name, type, value);
     }
 
-    public function removeRegisterConstant(name:String, type:int):void {
+    renderer_internal function removeRegisterConstant(name:String, type:int):void {
         var index:int = getRegisterConstantIndex(name, type);
 
         if(index < 0) return;
@@ -155,7 +239,7 @@ public class BatchRenderer extends EasierAGAL {
         _registerConstants.splice(index, 1);
     }
 
-    public function removeComponentConstant(name:String, type:int, value:Number):void {
+    renderer_internal function removeComponentConstant(name:String, type:int, value:Number):void {
         var index:int = getComponentConstantIndex(name, type);
 
         if(index < 0) return;
@@ -163,21 +247,21 @@ public class BatchRenderer extends EasierAGAL {
         _componentConstants.splice(index, 1);
     }
 
-    public function modifyRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
+    renderer_internal function modifyRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
         var index:int                   = getRegisterConstantIndex(name, type);
         var constant:RegisterConstant   = _registerConstants[index];
 
         constant.setValues(x, y, z, w);
     }
 
-    public function modifyComponentConstant(name:String, type:int, value:Number):void {
+    renderer_internal function modifyComponentConstant(name:String, type:int, value:Number):void {
         var index:int                   = getComponentConstantIndex(name, type);
         var constant:ComponentConstant  = _componentConstants[index];
 
         constant.value = value;
     }
 
-    public function getRegisterConstantIndex(name:String, type:int):int {
+    renderer_internal function getRegisterConstantIndex(name:String, type:int):int {
         var count:int = _registerConstants.length;
         for(var i:int = 0; i < count; i++) {
             var constant:RegisterConstant = _registerConstants[i];
@@ -191,7 +275,7 @@ public class BatchRenderer extends EasierAGAL {
         return -1;
     }
 
-    public function getComponentConstantIndex(name:String, type:int):int {
+    protected function getComponentConstantIndex(name:String, type:int):int {
         var count:int = _componentConstants.length;
         for(var i:int = 0; i < count; i++) {
             var constant:ComponentConstant = _componentConstants[i];
@@ -203,42 +287,6 @@ public class BatchRenderer extends EasierAGAL {
         }
 
         return -1;
-    }
-
-    public function render(outputTexture:Texture, premultipliedAlpha:Boolean = false, blendMode:String = BlendMode.NORMAL, clipRect:Rectangle = null, inputTransform:Matrix = null):void {
-        var context:Context3D = Starling.context;
-
-        if(context == null)
-            throw new MissingContextError();
-
-        if(_buffersDirty)
-            createBuffers(context);
-
-        // render to output texture
-        context.setRenderToTexture(outputTexture.base);
-
-        // setup output regions for rendering and (optionally) transform input geometries
-        var m:Matrix3D = setOrthographicProjection(0, 0, outputTexture.nativeWidth, outputTexture.nativeHeight, inputTransform);
-        context.setScissorRectangle(clipRect);
-
-        // set blend mode
-        var blendFactors:Array = BlendMode.getBlendFactors(blendMode, premultipliedAlpha);
-        Starling.context.setBlendFactors(blendFactors[0], blendFactors[1]);
-
-        // activate program (shader) and set the required buffers, constants, texture
-        context.setProgram(upload(context));
-
-        setVertexBuffers(context);
-        setInputTextures(context);
-
-        context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); //vc0
-        setProgramConstants(context, 4, 0);
-
-        // render
-        context.drawTriangles(_indexBuffer, 0, _triangleData.length / 3);
-
-        unsetInputTextures(context);
-        unsetVertexBuffers(context);
     }
 
     protected function getRegisterConstant(name:String):IRegister {
@@ -344,20 +392,15 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     private function setOrthographicProjection(x:Number, y:Number, width:Number, height:Number, transform:Matrix = null):Matrix3D {
-        if(transform == null) {
-            _projectionMatrix.setTo(
-                2.0 / width, 0, 0,
-                -2.0 / height, -(2 * x + width) / width, (2 * y + height) / height
-            );
+        _projectionMatrix.setTo(
+            2.0 / width, 0, 0,
+            -2.0 / height, -(2 * x + width) / width, (2 * y + height) / height
+        );
 
+        if(transform == null) {
             return MatrixUtil.convertTo3D(_projectionMatrix, _matrix3D);
         }
         else {
-            _projectionMatrix.setTo(
-                2.0 / width, 0, 0,
-                -2.0 / height, -(2 * x + width) / width, (2 * y + height) / height
-            );
-
             _helperMatrix.copyFrom(transform);
             _helperMatrix.concat(_projectionMatrix);
 
@@ -460,3 +503,6 @@ public class BatchRenderer extends EasierAGAL {
     }
 }
 }
+
+
+

@@ -9,6 +9,8 @@ import com.barliesque.agal.IRegister;
 
 import starling.renderer.vertex.VertexFormat;
 
+use namespace renderer_internal;
+
 public class ColoredGeometryRenderer extends BatchRenderer {
     public static const POSITION:String = "position";
     public static const COLOR:String    = "color";

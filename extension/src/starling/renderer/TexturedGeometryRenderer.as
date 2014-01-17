@@ -11,16 +11,18 @@ import com.barliesque.agal.TextureFlag;
 import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
 
-public class TexturedGeometryRenderer extends BatchRenderer {
-    public static const POSITION:String = "position";
-    public static const UV:String       = "uv";
+use namespace renderer_internal;
 
-    public static const INPUT_TEXTURE   = "inputTexture";
+public class TexturedGeometryRenderer extends BatchRenderer {
+    public static const POSITION:String         = "position";
+    public static const UV:String               = "uv";
+
+    public static const INPUT_TEXTURE:String    = "inputTexture";
 
     private var _positionID:int, _uvID:int;
 
     // shader variables
-    private var uv:IRegister = VARYING[0];
+    private var uv:IRegister = VARYING[0];  // v0 is used to pass interpolated uv from vertex to fragment shader
 
     public function TexturedGeometryRenderer() {
         setVertexFormat(createVertexFormat());
@@ -36,14 +38,17 @@ public class TexturedGeometryRenderer extends BatchRenderer {
     public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }
 
     override protected function vertexShaderCode():void {
+        comment("output vertex position");
         multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));
 
+        comment("pass uv to fragment shader");
         move(uv, getVertexAttribute(UV));
     }
 
     override protected function fragmentShaderCode():void {
         var input:ISampler = getTextureSampler(INPUT_TEXTURE);
 
+        comment("sample the texture and send resulting color to the output");
         sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);
     }
 
