@@ -164,3 +164,4 @@ Each shader is really a set of two shaders. As you can see, we have a vertex sha
 * fragment shader's job is sending a pixel color to the output
 * values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is outputing color for
 
+Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it send the current position to the output, then it passes interpolated UVs to the fragment shader. But But t 
