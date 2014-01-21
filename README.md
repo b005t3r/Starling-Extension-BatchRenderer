@@ -170,4 +170,6 @@ Each shader is really a set of two shaders. As you can see, we have a vertex sha
 
 Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it send the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
 
-As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format. The vertex constant register (vc) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method. Also notice the 'uv' variable. 
+As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format. The vertex constant register (vc) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method.
+
+Also notice how the UVs are passed. 
