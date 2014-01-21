@@ -132,6 +132,10 @@ private function createVertexFormat():VertexFormat {
 
 Vertex format is crucial - it tells the BatchRenderer implementation how and what different kinds of data are going to store data in each vertex. With this TexturedGeometryRenderer each vertex stores two kinds of data: vertex position in 2D space (x, y) and texture mapping coords (u, v). Also notice, each kind of data, when added to VertexFormat (by addProperty() method) is registered with a unique name (here "position" and "uv", passed via static constants) and once registered is given an unique id (stored in '_positionID' and '_uvID'). The former can be used in when writing shaders' code and the later is useful for fast accessing each property in AS3 code.
 
+
+ACCESSORS HERE
+==============
+
 Once you have your vertex format defined, it's time for writing some shaders.
 
 AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both - easy to understand and next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL. EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heart about it, don't worry - you'll get the hang of it in no time. If you still think you won't, then... what the hell are you still doign here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
@@ -164,4 +168,6 @@ Each shader is really a set of two shaders. As you can see, we have a vertex sha
 * fragment shader's job is sending a pixel color to the output
 * values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is outputing color for
 
-Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it send the current position to the output, then it passes interpolated UVs to the fragment shader. But But t 
+Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it send the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
+
+As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format.
