@@ -99,7 +99,16 @@ texturedRenderer.renderToTexture(renderTexture, settings);
 
 Doesn't look that scary, does it? Let's have a look at it in details.
 
-First, a VertexFormat is created and set:
+Subclassing
+-------------
+
+Many of BatchRenderer methids are inside a special 'renderer_internal' namespace, so make sure to include this code:
+```as3
+use namespace renderer_internal;
+```
+before your newly created class.
+
+Then you need to create a new VertexFormat and set it:
 ```as3
 public static const POSITION:String         = "position";
 public static const UV:String               = "uv";
@@ -123,3 +132,24 @@ private function createVertexFormat():VertexFormat {
 
 Vertex format is crucial - it tells the BatchRenderer implementation how and what different kinds of data are going to store data in each vertex. With this TexturedGeometryRenderer each vertex stores two kinds of data: vertex position in 2D space (x, y) and texture mapping coords (u, v). Also notice, each kind of data, when added to VertexFormat (by addProperty() method) is registered with a unique name (here "position" and "uv", passed via static constants) and once registered is given an unique id (stored in '_positionID' and '_uvID'). The former can be used in when writing shaders' code and the later is useful for fast accessing each property in AS3 code.
 
+Once you have your vertex format defined, it's time for writing some shaders.
+
+AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both - easy to understand and next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL. EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heart about it, don't worry - you'll get the hang of it in no time. If you still think you won't, then... what the hell are you still doign here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
+
+OK, sorry for that. Shaders. Here they are:
+
+```as3
+override protected function vertexShaderCode():void {                                                              
+    comment("output vertex position");                                                                              
+    multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));                         
+    
+    comment("pass uv to fragment shader");                              
+    move(uv, getVertexAttribute(UV));                                                                         
+}
+
+override protected function fragmentShaderCode():void {                                                                    var input:ISampler = getTextureSampler(INPUT_TEXTURE);                                                                                               
+    comment("sample the texture and send resulting color to the output");                                                  sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);                    
+}                                                                                                                   
+```
+
+Each shader is really a set of two shaders. 
