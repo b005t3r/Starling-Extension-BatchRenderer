@@ -139,6 +139,13 @@ AGAL is the shader language used by Stage3D. It is a simple assembly language, w
 OK, sorry for that. Shaders. Here they are:
 
 ```as3
+public static const POSITION:String         = "position";
+public static const UV:String               = "uv";
+public static const INPUT_TEXTURE:String    = "inputTexture";
+//...
+// shader variables
+private var uv:IRegister = VARYING[0];  // v0 is used to pass interpolated uv from vertex to fragment shader
+//...
 override protected function vertexShaderCode():void {                                                              
     comment("output vertex position");                                                                              
     multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));                         
@@ -152,4 +159,8 @@ override protected function fragmentShaderCode():void {                         
 }                                                                                                                   
 ```
 
-Each shader is really a set of two shaders. 
+Each shader is really a set of two shaders. As you can see, we have a vertex shader (implemented in 'vertexShaderCode()') and a fragment (pixel) shader (implemented in 'fragmentShaderCode()'). I'm not going to get into AGAL or shader specific details, but if you're completely new to any of this, there are only three things you need to know:
+* vertex shader's job is sending coordinates (x, y) of each vertex to teh OUTPUT
+* fragment shader's job is sending a pixel color to the output
+* values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is outputing color for
+
