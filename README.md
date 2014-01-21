@@ -10,7 +10,7 @@ What is Batch Renderer?
 
 Batch Renderer is an extension for Starling Framework - a GPU powered, 2D rendering framework. In Starling, all rendering is (mostly) done using Quad classes which, when added to the Starling's display list hierarchy, render a rectangular region onto the screen. But sometimes you want to do something than this and for that, you can use the BatchRenderer class.
 
-First subclass it, like so:
+First subclass it, like so...
 ```as3
 use namespace renderer_internal;
 
@@ -63,6 +63,38 @@ public class TexturedGeometryRenderer extends BatchRenderer {
     }
 }
 
+```
+
+... and use it in your code:
+
+```as3
+// add a new quad
+var vertex:int = BatchRendererUtil.addQuad(texturedRenderer);                    
+
+// setup Quad's vertices position...
+texturedRenderer.setVertexPosition(vertex    ,  0,    0);                
+texturedRenderer.setVertexPosition(vertex + 1, 100,   0);                
+texturedRenderer.setVertexPosition(vertex + 2,   0, 100);                
+texturedRenderer.setVertexPosition(vertex + 3, 100, 100);                
+                                 
+// ... UV mapping...                                                                         
+texturedRenderer.setVertexUV(vertex    , 0, 0);                          
+texturedRenderer.setVertexUV(vertex + 1, 1, 0);                          
+texturedRenderer.setVertexUV(vertex + 2, 0, 1);                          
+texturedRenderer.setVertexUV(vertex + 3, 1, 1);                          
+
+// ... and an input texture
+texturedRenderer.inputTexture = Texture.fromBitmap(new AmazingBitmap());
+
+// create rendering settings to be used                                                                         
+settings               = new RenderingSettings();                        
+settings.blendMode     = BlendMode.NORMAL;                               
+settings.clearColor    = 0xcccccc;                                       
+settings.clearAlpha    = 1.0;                                            
+
+// and render!
+var outputTexture:RenderTexture = new RenderTexture(1024, 1024, false);
+texturedRenderer.renderToTexture(renderTexture, settings);              
 ```
 
 Doesn't look that scary, does it? Let's have a look at it in details.
