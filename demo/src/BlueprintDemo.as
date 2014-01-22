@@ -12,7 +12,7 @@ import starling.display.BlendMode;
 import starling.display.Sprite;
 import starling.events.Event;
 import starling.renderer.BatchRendererUtil;
-import starling.renderer.BlueprintPatternRenderer;
+import starling.renderer.examples.BlueprintPatternRenderer;
 
 public class BlueprintDemo extends Sprite{
 

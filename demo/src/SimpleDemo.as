@@ -17,9 +17,9 @@ import starling.display.Image;
 import starling.display.Sprite;
 import starling.events.Event;
 import starling.renderer.BatchRendererUtil;
-import starling.renderer.ColoredGeometryRenderer;
+import starling.renderer.examples.ColoredGeometryRenderer;
 import starling.renderer.RenderingSettings;
-import starling.renderer.TexturedGeometryRenderer;
+import starling.renderer.examples.TexturedGeometryRenderer;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;
 
@@ -81,10 +81,6 @@ public class SimpleDemo extends Sprite {
         _texturedRenderer.setVertexUV(vertex + 1, 1, 0);
         _texturedRenderer.setVertexUV(vertex + 2, 0, 1);
         _texturedRenderer.setVertexUV(vertex + 3, 1, 1);
-
-        var m:Matrix = new Matrix();
-        m.scale(10, 10);
-        m.translate(0, 220);
 
         _settings               = new RenderingSettings();
         _settings.blendMode     = BlendMode.NORMAL;

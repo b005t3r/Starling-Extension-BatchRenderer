@@ -3,7 +3,9 @@
  * Date: 20/01/14
  * Time: 11:21
  */
-package starling.renderer {
+package starling.renderer.examples {
+import starling.renderer.*;
+
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
 import com.barliesque.shaders.macro.Utils;

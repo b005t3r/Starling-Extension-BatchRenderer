@@ -14,8 +14,8 @@ import starling.events.Touch;
 import starling.events.TouchEvent;
 import starling.events.TouchPhase;
 import starling.renderer.BatchRendererUtil;
-import starling.renderer.ColoredGeometryRenderer;
-import starling.renderer.TexturedGeometryRenderer;
+import starling.renderer.examples.ColoredGeometryRenderer;
+import starling.renderer.examples.TexturedGeometryRenderer;
 import starling.textures.Texture;
 import starling.utils.Color;
 

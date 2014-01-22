@@ -3,7 +3,8 @@
  * Date: 16/01/14
  * Time: 8:36
  */
-package starling.renderer {
+package starling.renderer.examples {
+import starling.renderer.*;
 
 import com.barliesque.agal.IRegister;
 

@@ -3,7 +3,9 @@
  * Date: 16/01/14
  * Time: 12:08
  */
-package starling.renderer {
+package starling.renderer.examples {
+import starling.renderer.*;
+
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
 import com.barliesque.agal.TextureFlag;
