@@ -166,16 +166,16 @@ public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData
 
 As you can see, they are all one-liners. Each uses an internal *BatchRenderer* method and a vertex property ID created when registering each property with a vertex format. Now you know what these IDs are for - they let you access vertex properties efficiently (no string comparison needed).
 
-You've probably already spoted the *inputTexture* property, which does not use a vertex property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures a bit easier. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know).
+You've probably already spoted the *inputTexture* property, which does not use a vertex property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures a bit easier. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers, which we don't explicitely set here. You define constants per shader, not per vertex,  
 
 We're done here, all important properties can now be easily accessed using these few one-liner methods. Just one more thing to point out - none of these are really necessary. You could always include the *renderer_internal* namespace in your client code and use the setVertexData() methods directly, right? Well, yes, you could, but you have to admit, it's much more elegant this way, is it?
 
 Writing shaders
 ---------------
 
-Once you have your vertex format defined, it's time for writing some shaders.
+Once you have your vertex format defined and your property accessors in place, it's time to add some shaders.
 
-AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both - easy to understand and next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL. EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heart about it, don't worry - you'll get the hang of it in no time. If you still think you won't, then... what the hell are you still doign here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
+AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both - easy to understand and next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL! EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heart about it, don't worry - you'll get the hang of it in no time. If you still think you won't, then... what the hell are you still doign here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
 
 OK, sorry for that. Shaders. Here they are:
 
@@ -201,12 +201,12 @@ override protected function fragmentShaderCode():void {                         
 ```
 
 Each shader is really a set of two shaders. As you can see, we have a vertex shader (implemented in 'vertexShaderCode()') and a fragment (pixel) shader (implemented in 'fragmentShaderCode()'). I'm not going to get into AGAL or shader specific details, but if you're completely new to any of this, there are only three things you need to know:
-* vertex shader's job is sending coordinates (x, y) of each vertex to teh OUTPUT
-* fragment shader's job is sending a pixel color to the output
-* values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is outputing color for
+* vertex shader's job is sending coordinates (x, y) of each vertex to the OUTPUT
+* fragment shader's job is sending a color of each pixel being processed to the output
+* values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is working on
 
-Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it send the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
+Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it sends the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
 
-As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format. The vertex constant register (vc) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method.
+As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format (*"position"* and *"uv"*). The vertex constant register (vc) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method.
 
 Also notice how the UVs are passed. 
