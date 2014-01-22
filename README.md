@@ -85,7 +85,10 @@ texturedRenderer.setVertexUV(vertex + 3, 1, 1);
 
 // ... and an input texture
 texturedRenderer.inputTexture = Texture.fromBitmap(new AmazingBitmap());
+```
 
+You can either render to texture target:
+```as3
 // create rendering settings to be used                                                                         
 settings               = new RenderingSettings();                        
 settings.blendMode     = BlendMode.NORMAL;                               
@@ -95,6 +98,13 @@ settings.clearAlpha    = 1.0;
 // and render!
 var outputTexture:RenderTexture = new RenderTexture(1024, 1024, false);
 texturedRenderer.renderToTexture(renderTexture, settings);              
+```
+
+... or the back buffer, using Starling's display list:
+
+```as3
+var wrapper:BatchRendererWrapper = new BatchRendererWrapper(texturedRenderer);
+addChild(wrapper);
 ```
 
 Doesn't look that scary, does it? Let's have a look at it in details.
@@ -130,8 +140,24 @@ private function createVertexFormat():VertexFormat {
 
 ```
 
-Vertex format is crucial - it tells the BatchRenderer implementation how and what different kinds of data are going to store data in each vertex. With this TexturedGeometryRenderer each vertex stores two kinds of data: vertex position in 2D space (x, y) and texture mapping coords (u, v). Also notice, each kind of data, when added to VertexFormat (by addProperty() method) is registered with a unique name (here "position" and "uv", passed via static constants) and once registered is given an unique id (stored in '_positionID' and '_uvID'). The former can be used in when writing shaders' code and the later is useful for fast accessing each property in AS3 code.
+Vertex format is crucial - it tells the BatchRenderer implementation how and what different kinds of data are going to store data in each vertex. With this TexturedGeometryRenderer each vertex stores two kinds of data: vertex position in 2D space (x, y) and texture mapping coords (u, v). Also notice, each kind of data, when added to VertexFormat (by addProperty() method) is registered with a unique name (here *"position"* and *"uv"*, passed via static constants) and once registered is given an unique id (stored in *'_positionID'* and *'_uvID'*). The former can be used in when writing shaders' code and the later is useful for fast accessing each property in AS3 code.
 
+Talking about accessing properties, let's create some accessors to our geometry and shader properties.
+
+```as3
+public static const INPUT_TEXTURE:String    = "inputTexture";
+                                                             
+private var _positionID:int, _uvID:int;                      
+//...
+public function get inputTexture():Texture { return getInputTexture(INPUT_TEXTURE); } 
+public function set inputTexture(value:Texture):void { setInputTexture(INPUT_TEXTURE, value); }
+
+public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _positionID, position); }
+public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, _positionID, x, y); }   
+
+public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvID, uv); }                        
+public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }                                              
+```
 
 ACCESSORS HERE
 ==============
