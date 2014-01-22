@@ -145,9 +145,8 @@ Vertex format is crucial - it tells the BatchRenderer implementation how and wha
 Talking about accessing properties, let's create some accessors to our geometry and shader properties.
 
 ```as3
-public static const INPUT_TEXTURE:String    = "inputTexture";
-                                                             
-private var _positionID:int, _uvID:int;                      
+public static const INPUT_TEXTURE:String = "inputTexture";
+private var _positionID:int, _uvID:int;
 //...
 public function get inputTexture():Texture { return getInputTexture(INPUT_TEXTURE); } 
 public function set inputTexture(value:Texture):void { setInputTexture(INPUT_TEXTURE, value); }
@@ -156,12 +155,10 @@ public function getVertexPosition(vertex:int, position:Vector.<Number> = null):V
 public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, _positionID, x, y); }   
 
 public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvID, uv); }                        
-public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }                                              
+public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }            
 ```
-
-ACCESSORS HERE
-==============
-
+pro
+As you can see, these are all one-liners. Each uses an internal *BatchRenderer* method asdfsdf
 Once you have your vertex format defined, it's time for writing some shaders.
 
 AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both - easy to understand and next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL. EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heart about it, don't worry - you'll get the hang of it in no time. If you still think you won't, then... what the hell are you still doign here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
