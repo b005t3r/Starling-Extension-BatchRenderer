@@ -8,12 +8,12 @@ If so, I might have something just for you. Behold the Batch Renderer!
 What is Batch Renderer?
 =======================
 
-Batch Renderer is an extension for Starling Framework - a GPU powered, 2D rendering framework. In Starling, rendering is (mostly) done using Quad classes which, when added to the Starling's display list hierarchy, render a rectangular region onto the screen. That's very efficient and works great or most use cases, but sometimes you want to do something else. Something like:
+Batch Renderer is an extension for Starling Framework - a GPU powered, 2D rendering framework. In Starling, rendering is (mostly) done using Quad classes which, when added to the Starling's display list, render a rectangular region onto the screen. That's very efficient and works great for most use cases, but sometimes you want to do something else. Something like:
 <dl>
   <dt>Custom DisplayObjects</dt>
   <dd>This is of course possible to do using only Starling, but with BatchRenderer you'll be able to do it easier and quicker. Plus you won't be limited to Starling's vertex format, which can only hold position, UVs and color data.</dd>
   <dt>Blend modes impossible to set up with simple setBlendFactors() call</dt>
-  <dd>Some blend modes are impossible to do by just setting the Stage3D blend factors. Overlay is a good example, it's a mix of multiply and screen and the decision which one should be used is made based on bottom layer's pixel value.</dd>
+  <dd>Some blend modes are impossible to do by just setting the Stage3D blend factors. Overlay is a good example> It's a mix of multiply and screen, and the decision which one should be used is made based on bottom layer's pixel value. Stage3D can't do that for you, but a custom renderer can.</dd>
   <dt>Algorithms that make use of GPU's parallel processing</dt>
   <dd>Probably something like this is a good example: https://github.com/mattdesl/lwjgl-basics/wiki/2D-Pixel-Perfect-Shadows</dd>
 </dl>
