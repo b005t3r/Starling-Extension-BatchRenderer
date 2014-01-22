@@ -166,9 +166,9 @@ public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData
 
 As you can see, they are all one-liners. Each uses an internal *BatchRenderer* method and a vertex property ID created when registering each property with a vertex format. Now you know what these IDs are for - they let you access vertex properties efficiently (no string comparison needed).
 
-You've probably already spoted the *inputTexture* property, which does not use a vertex property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures a bit easier. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers, which we don't explicitely set here. You define constants per shader, not per vertex,  
+You've probably already spoted the *inputTexture* property, which does not use a vertex property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures a bit easier. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers (which we don't explicitely set here) - you set constats per shader, not per vertex.
 
-We're done here, all important properties can now be easily accessed using these few one-liner methods. Just one more thing to point out - none of these are really necessary. You could always include the *renderer_internal* namespace in your client code and use the setVertexData() methods directly, right? Well, yes, you could, but you have to admit, it's much more elegant this way, is it?
+OK, we're done here. All essential properties can now be easily accessed using these few one-liner methods. But there's just one more thing to point out - none of these methods are really necessary. You could as well include the *renderer_internal* namespace in your client code and use the setVertexData() methods directly, right? Well, yes, you could, but you have to admit, it's much more elegant this way, is it?
 
 Writing shaders
 ---------------
@@ -205,8 +205,10 @@ Each shader is really a set of two shaders. As you can see, we have a vertex sha
 * fragment shader's job is sending a color of each pixel being processed to the output
 * values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is working on
 
-Out vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it sends the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
+Our vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it sends the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
 
-As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format (*"position"* and *"uv"*). The vertex constant register (vc) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method.
+As you can see there's no hardcoded registers there. Each vertex attribute register (va) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format (*"position"* and *"uv"*). The vertex constant register (vc) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method (we haven't set this one explicitely, it's the only constatnt set by the base *BatchRenderer* class internally). 
+Also notice how the UVs are passed. EasyAGAL's magic let's us define VARYING register 0 (v0) as a class variable, so in both of our shaders we don't have to reference UVs as VARYING[0] - we can simply use the variable. OK, it's nothing really spectacular, but it makes code much esiaer to read and understand.
 
-Also notice how the UVs are passed. 
+And finally the fragment shader. All it does is sampling the input texture using the interpolated UVs passed from vertex shader and sending the result color to the OUTPUT. All of this done using only one instruction and few self-describing variables. OK, it doesn't really matter with this particular shader if you code it in AGAL assembly or using fancy looking variables and functions, but with more complex shaders it really makes a difference.
+
