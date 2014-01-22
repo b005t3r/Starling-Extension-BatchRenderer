@@ -223,5 +223,11 @@ Our vertex shader is a simple, standard one - probably most of your vertex shade
 As you can see there's no hardcoded registers there. Each vertex attribute register (*va*) is being accessed using the getVertexAttribute() method and a string, used when setting a vertex format (*"position"* and *"uv"*). The vertex constant register (*vc*) holding the projection matrix is accessed in a similar way - using the getRegisterConstant() method (we haven't set this one explicitely, it's the only constatnt set by the base *BatchRenderer* class internally). 
 Also notice how the UVs are passed. EasyAGAL's magic let's us define *VARYING* register 0 (*v0*) as a class variable, so in both of our shaders we don't have to reference UVs as *VARYING[0]* - we can simply use the variable. OK, it's nothing really spectacular, but it makes code much easier to read and understand.
 
-And finally the fragment shader. All it does is sampling the input texture using the interpolated UVs passed from vertex shader and sending the result color to the OUTPUT. All of this done using only one instruction and few self-describing variables. It doesn't really matter with this particular shader if you code it in AGAL assembly or using fancy looking variables and functions, but with more complex shaders, it really makes a difference.
+And finally the fragment shader. All it does is sampling the input texture using the interpolated UVs passed from vertex shader and sending the result color to the OUTPUT. All of this done using only one instruction and few self-describing variables. Again, it doesn't really matter with this particular shader if you code it in AGAL assembly or using fancy looking variables and functions, but with more complex shaders, it does make a difference.
 
+Is that it?
+-----------
+
+Yes, pretty much that's it. So, if you're interested in checking Batch Renderer out, you'll also need these:
+* [Starling Framework](https://github.com/PrimaryFeather/Starling-Framework/)
+* [EasyAGAL](https://github.com/Barliesque/EasyAGAL)
