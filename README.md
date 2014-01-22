@@ -205,8 +205,11 @@ override protected function vertexShaderCode():void {
     move(uv, getVertexAttribute(UV));                                                                         
 }
 
-override protected function fragmentShaderCode():void {                                                                    var input:ISampler = getTextureSampler(INPUT_TEXTURE);                                                                                               
-    comment("sample the texture and send resulting color to the output");                                                  sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);                    
+override protected function fragmentShaderCode():void {
+    var input:ISampler = getTextureSampler(INPUT_TEXTURE);
+    
+    comment("sample the texture and send resulting color to the output");
+    sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);                    
 }                                                                                                                   
 ```
 
