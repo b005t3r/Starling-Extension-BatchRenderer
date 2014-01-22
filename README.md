@@ -174,7 +174,7 @@ public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Numbe
 public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }            
 ```
 
-As you can see, they are all one-liners. Each uses an internal *BatchRenderer* method and a vertex unique property ID created when registering each property within *VertexFormat*. Now you can see what these IDs are for and how they let vertex properties to be accessed more efficiently than by using strings (hint: no string comparison is needed).
+As you can see, they are all one-liners and all use an internal *BatchRenderer* methods and a vertex unique property IDs created when registering each property within *VertexFormat*. Now you can see what these IDs are for and how they let vertex properties to be accessed more efficiently than by using strings (hint: no string comparison is needed).
 
 Also, you've probably spoted the *inputTexture* property already, which does not use a vertex unique property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures really easy. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers (which we don't explicitely set here) - you set constats per shader, not per vertex.
 
@@ -213,7 +213,7 @@ override protected function fragmentShaderCode():void {
 }                                                                                                                   
 ```
 
-Each renderer is really a set of two shaders. As you can see, we have a vertex shader (implemented in 'vertexShaderCode()') and a fragment (pixel) shader (implemented in 'fragmentShaderCode()'). I'm not going to get into AGAL or shader specific details, but if you're completely new to any of this, there are only three things you need to know:
+Every renderer is really a set of two shaders. As you can see, we have a vertex shader (implemented in 'vertexShaderCode()') and a fragment (pixel) shader (implemented in 'fragmentShaderCode()'). I'm not going to get into AGAL or shader specific details, but if you're completely new to any of this, there are only three things you need to know:
 * vertex shader's job is sending coordinates (x, y) of each vertex to the OUTPUT
 * fragment shader's job is sending a color of each pixel being processed to the output
 * values can be passed from vertex to fragment shader via VARYING (v) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is working on
