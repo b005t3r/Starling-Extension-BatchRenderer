@@ -6,7 +6,7 @@ Ever wanted to create a custom DisplayObject? Needed to render a non-rectangular
 If so, I might have something just for you. Behold the Batch Renderer!
 
 What is Batch Renderer?
------------------------
+=======================
 
 Batch Renderer is an extension for Starling Framework - a GPU powered, 2D rendering framework. In Starling, all rendering is (mostly) done using Quad classes which, when added to the Starling's display list hierarchy, render a rectangular region onto the screen. But sometimes you want to do something than this and for that, you can use the BatchRenderer class.
 
@@ -110,13 +110,16 @@ addChild(wrapper);
 Doesn't look that scary, does it? Let's have a look at it in details.
 
 Subclassing
--------------
+===========
 
 Many of BatchRenderer methids are inside a special 'renderer_internal' namespace, so make sure to include this code:
 ```as3
 use namespace renderer_internal;
 ```
 before your newly created class.
+
+Creating a custom VertexFormat
+------------------------------
 
 Then you need to create a new VertexFormat and set it:
 ```as3
@@ -142,6 +145,9 @@ private function createVertexFormat():VertexFormat {
 
 Vertex format is crucial - it tells the BatchRenderer implementation how and what different kinds of data are going to store data in each vertex. With this TexturedGeometryRenderer each vertex stores two kinds of data: vertex position in 2D space (x, y) and texture mapping coords (u, v). Also notice, each kind of data, when added to VertexFormat (by addProperty() method) is registered with a unique name (here *"position"* and *"uv"*, passed via static constants) and once registered is given an unique id (stored in *'_positionID'* and *'_uvID'*). The former can be used in when writing shaders' code and the later is useful for fast accessing each property in AS3 code.
 
+Adding property accessors
+-------------------------
+
 Talking about accessing properties, let's create some accessors to our geometry and shader properties.
 
 ```as3
@@ -157,8 +163,16 @@ public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVert
 public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvID, uv); }                        
 public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }            
 ```
-pro
-As you can see, these are all one-liners. Each uses an internal *BatchRenderer* method asdfsdf
+
+As you can see, they are all one-liners. Each uses an internal *BatchRenderer* method and a vertex property ID created when registering each property with a vertex format. Now you know what these IDs are for - they let you access vertex properties efficiently (no string comparison needed).
+
+You've probably already spoted the *inputTexture* property, which does not use a vertex property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures a bit easier. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know).
+
+We're done here, all important properties can now be easily accessed using these few one-liner methods. Just one more thing to point out - none of these are really necessary. You could always include the *renderer_internal* namespace in your client code and use the setVertexData() methods directly, right? Well, yes, you could, but you have to admit, it's much more elegant this way, is it?
+
+Writing shaders
+---------------
+
 Once you have your vertex format defined, it's time for writing some shaders.
 
 AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both - easy to understand and next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL. EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heart about it, don't worry - you'll get the hang of it in no time. If you still think you won't, then... what the hell are you still doign here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
