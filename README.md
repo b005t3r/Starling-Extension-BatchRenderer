@@ -153,12 +153,12 @@ private function createVertexFormat():VertexFormat {
 
 ```
 
-*VertexFormat* is crucial - it tells the *BatchRenderer* implementation how and what different kinds of data are going to be stored in each vertex. With this (really simple) *TexturedGeometryRenderer* each vertex stores two kinds of data: vertex position in 2D space (*x*, *y*) and texture mapping coords (*u*, *v*). Also notice, each kind of data, when added to *VertexFormat* (by *addProperty()* method) is registered with an unique name (here *"position"* and *"uv"*, passed via static constants) and once registered, is given an unique ID (stored in *'_positionID'* and *'_uvID'*). The former can be used in when writing shaders' code and the later is useful for efficiently accessing each property in AS3 code (more on this later).
+*VertexFormat* is crucial - it tells the *BatchRenderer* implementation how and what different kinds of data are going to be stored in each vertex. With this (really simple) *TexturedGeometryRenderer* each vertex stores two kinds of data: vertex position in 2D space (*x*, *y*) and texture mapping coords (*u*, *v*). Also notice, each kind of data, when added to *VertexFormat* (by *addProperty()* method) is registered with an unique name (here *"position"* and *"uv"*, passed via static constants) and once registered, is given an unique ID (stored in *'_positionID'* and *'_uvID'*). The former can be used when writing shaders and the later is useful for efficiently accessing each property in AS3 code (more on these later).
 
 Adding property accessors
 -------------------------
 
-Talking about accessing properties, let's create some accessors for our geometry and shader properties. Client code will call these to set up geometry to be rendered.
+Talking about accessing properties, let's create some accessors for our geometry and shader data. Client code will call these to set up things to be rendered.
 
 ```as3
 public static const INPUT_TEXTURE:String = "inputTexture";
