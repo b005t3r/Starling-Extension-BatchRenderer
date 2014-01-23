@@ -1,7 +1,7 @@
 Batch Renderer Starling Extension
 ================================
 
-Ever wanted to create a custom DisplayObject? Needed to render a non-rectangular geometry? Had to pass custom data via vertex atribute (va) registers to your shader? Cried inside (just a little) when custom texture processing was necessary? 
+Ever wanted to create a custom DisplayObject? Needed to render a non-rectangular geometry? Had to pass custom data via vertex attribute (va) registers to your shader? Cried inside (just a little) when custom texture processing was necessary? 
 
 If so, I might have something just for you. Behold the Batch Renderer!
 
@@ -13,7 +13,7 @@ Batch Renderer is an extension for Starling Framework - a GPU powered, 2D render
   <dt>Custom DisplayObjects</dt>
   <dd>This is of course possible to do using only Starling, but with BatchRenderer you'll be able to do it easier and quicker. Plus you won't be limited to Starling's vertex format, which can only hold position, UVs and color data.</dd>
   <dt>Blend modes impossible to set up with simple setBlendFactors() call</dt>
-  <dd>Some blend modes are impossible to do by just setting the Stage3D blend factors. Overlay is a good example> It's a mix of multiply and screen, and the decision which one should be used is made based on bottom layer's pixel value. Stage3D can't do that for you, but a custom renderer can.</dd>
+  <dd>Some blend modes are impossible to do by just setting the Stage3D blend factors. Overlay is a good example: It's a mix of multiply and screen, and the decision which one should be used is made based on bottom layer's pixel value. Stage3D can't do that for you, but a custom renderer can.</dd>
   <dt>Algorithms that make use of GPU's parallel processing</dt>
   <dd>Probably something like this is a good example: https://github.com/mattdesl/lwjgl-basics/wiki/2D-Pixel-Perfect-Shadows</dd>
 </dl>
@@ -176,7 +176,7 @@ public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData
 
 As you can see, they are all one-liners and all use internal *BatchRenderer* methods and vertex unique property IDs created when registering each property within *VertexFormat*. Now you can see what these IDs are for and how they let vertex properties to be accessed more efficiently than by using strings (hint: no string comparison is needed).
 
-Also, you've probably spoted the *inputTexture* property already, which does not use a vertex unique property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures really easy. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers (which we don't explicitely set here) - you set constats per shader, not per vertex.
+Also, you've probably spotted the *inputTexture* property already, which does not use a vertex unique property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures really easy. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers (which we don't explicitly set here) - you set constants per shader, not per vertex.
 
 Writing shaders
 ---------------
@@ -212,13 +212,13 @@ override protected function fragmentShaderCode():void {
 ```
 
 Every renderer is really a set of two shaders. As you can see, we have a vertex shader (implemented in *vertexShaderCode()*) and a fragment (pixel) shader (implemented in *fragmentShaderCode()*). I'm not going to get into AGAL or shader specific details, but if you're completely new to any of this, there are only three things you need to know:
-* vertex shader's job is sending coordinates (x, y) of each vertex to the OUTPUT
-* fragment shader's job is sending a color of each pixel being processed to the output
-* values can be passed from vertex to fragment shader via *VARYING* (*v*) registers; each value passed this way will be interpolated between vertices, acording to the pixel position fragment shader is working on
+* vertex shader's job is sending coordinates (*x*, *y*) of each vertex to the *OUTPUT*
+* fragment shader's job is sending a color of each pixel being processed to the *OUTPUT*
+* values can be passed from vertex to fragment shader via *VARYING* (*v*) registers; each value passed this way will be interpolated between vertices, according to the pixel position fragment shader is working on
 
 Our vertex shader is a simple, standard one - probably most of your vertex shaders will look very similar. First it sends the current position to the output, then it passes interpolated UVs to the fragment shader. But the interesting thing is not what it does, but how it does it.
 
-As you can see there's no hardcoded registers there. Each vertex attribute register (*va*) is being accessed using *getVertexAttribute()* method and a string, used when setting a vertex format (*"position"* and *"uv"*). The vertex constant register (*vc*) holding the projection matrix is accessed in a similar way - using *getRegisterConstant()* method (we haven't set this one explicitely, it's the only constatnt set by the base *BatchRenderer* class internally). 
+As you can see there's no hardcoded registers there. Each vertex attribute register (*va*) is being accessed using *getVertexAttribute()* method and a string, used when setting a vertex format (*"position"* and *"uv"*). The vertex constant register (*vc*) holding the projection matrix is accessed in a similar way - using *getRegisterConstant()* method (we haven't set this one explicitly, it's the only constant set by the base *BatchRenderer* class internally). 
 Also notice how the UVs are passed. EasyAGAL's magic let's us define *VARYING* register 0 (*v0*) as a class variable, so in both of our shaders we don't have to reference UVs as *VARYING[0]* - we can simply use the variable. OK, it's nothing really spectacular, but it makes code much easier to read and understand.
 
 And finally the fragment shader. All it does is sampling the input texture using the interpolated UVs passed from vertex shader and sending the result color to the OUTPUT. All of this done using only one instruction and few self-describing variables. Again, it doesn't really matter with this particular shader if you code it in AGAL assembly or using fancy looking variables and functions, but with more complex shaders, it does make a difference.
@@ -226,7 +226,7 @@ And finally the fragment shader. All it does is sampling the input texture using
 Is that it?
 -----------
 
-Yes, pretty much that's it. So, if you're interested in checking Batch Renderer out, download the code and lauch the demos included. It should give you an idea of how to use this extension.
+Yes, pretty much that's it. So, if you're interested in checking Batch Renderer out, download the code and launch the demos included. It should give you an idea of how to use this extension.
 
 You'll also need these to make it work:
 * [Starling Framework](https://github.com/PrimaryFeather/Starling-Framework/)
