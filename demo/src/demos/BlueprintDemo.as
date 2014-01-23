@@ -3,7 +3,7 @@
  * Date: 20/01/14
  * Time: 13:19
  */
-package {
+package demos {
 import starling.animation.Transitions;
 import starling.animation.Tween;
 import starling.core.Starling;

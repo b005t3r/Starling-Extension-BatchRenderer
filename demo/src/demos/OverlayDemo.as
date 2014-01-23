@@ -3,8 +3,7 @@
  * Date: 22/01/14
  * Time: 16:14
  */
-package {
-import starling.core.Starling;
+package demos {
 import starling.display.BatchRendererWrapper;
 import starling.display.BlendMode;
 import starling.display.Sprite;

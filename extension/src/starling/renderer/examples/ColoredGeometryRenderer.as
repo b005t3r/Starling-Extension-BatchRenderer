@@ -4,10 +4,9 @@
  * Time: 8:36
  */
 package starling.renderer.examples {
-import starling.renderer.*;
-
 import com.barliesque.agal.IRegister;
 
+import starling.renderer.*;
 import starling.renderer.vertex.VertexFormat;
 
 use namespace renderer_internal;

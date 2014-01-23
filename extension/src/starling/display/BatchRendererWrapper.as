@@ -8,10 +8,8 @@ import flash.geom.Matrix;
 import flash.geom.Rectangle;
 
 import starling.core.RenderSupport;
-
 import starling.renderer.BatchRenderer;
 import starling.renderer.BatchRendererUtil;
-import starling.renderer.RenderingSettings;
 
 /**
  * Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list.

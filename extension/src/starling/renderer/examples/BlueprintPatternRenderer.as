@@ -4,14 +4,11 @@
  * Time: 11:21
  */
 package starling.renderer.examples {
-import starling.renderer.*;
-
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
 import com.barliesque.shaders.macro.Utils;
 
-import starling.renderer.constant.ConstantType;
-
+import starling.renderer.*;
 import starling.renderer.vertex.VertexFormat;
 
 use namespace renderer_internal;
@@ -34,11 +31,23 @@ public class BlueprintPatternRenderer extends BatchRenderer {
     private var _markColorID:int;
     private var _lineSizesID:int;
 
+    // shader vars
+    private var position:IRegister          = VARYING[0];
+    private var bounds:IRegister            = VARYING[1];
+    private var backgroundColor:IRegister   = VARYING[2];
+    private var borderColor:IRegister       = VARYING[3];
+    private var markColor:IRegister         = VARYING[4];
+    private var lineWidths:IRegister        = VARYING[5];
+    private var borderWidth:IComponent      = VARYING[5].x;
+    private var markWidth:IComponent        = VARYING[5].y;
+    private var markLength:IComponent       = VARYING[5].z;
+    private var markSpacing:IComponent      = VARYING[5].w;
+
     public function BlueprintPatternRenderer() {
         setVertexFormat(createVertexFormat());
 
-        addComponentConstant(ZERO, ConstantType.FRAGMENT, 0);
-        addComponentConstant(ONE, ConstantType.FRAGMENT, 1);
+        addComponentConstant(ZERO, ShaderType.FRAGMENT, 0);
+        addComponentConstant(ONE, ShaderType.FRAGMENT, 1);
     }
 
     public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _positionID, position); }
@@ -74,25 +83,6 @@ public class BlueprintPatternRenderer extends BatchRenderer {
             setVertexData(i, _lineSizesID, borderWidth, markWidth, markLength, markSpacing);
     }
 
-    // shader vars
-    private var position:IRegister          = VARYING[0];
-    private var bounds:IRegister            = VARYING[1];
-    private var backgroundColor:IRegister   = VARYING[2];
-    private var borderColor:IRegister       = VARYING[3];
-    private var markColor:IRegister         = VARYING[4];
-    private var lineWidths:IRegister        = VARYING[5];
-    private var borderWidth:IComponent      = VARYING[5].x;
-    private var markWidth:IComponent        = VARYING[5].y;
-    private var markLength:IComponent       = VARYING[5].z;
-    private var markSpacing:IComponent      = VARYING[5].w;
-    private var outputColor:IRegister       = TEMP[0];
-    private var borderMargins:IRegister     = TEMP[1];
-    private var cellMargins:IRegister       = TEMP[2];
-    private var cellPosition:IRegister      = TEMP[3];
-    private var tempColor:IRegister         = TEMP[4];
-    private var tempRegisterA:IRegister     = TEMP[5];
-    private var tempRegisterB:IRegister     = TEMP[6];
-
     override protected function vertexShaderCode():void {
         comment("output vertex position");
         multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));
@@ -107,8 +97,15 @@ public class BlueprintPatternRenderer extends BatchRenderer {
     }
 
     override protected function fragmentShaderCode():void {
-        var zero:IComponent = getComponentConstant(ZERO);
-        var one:IComponent  = getComponentConstant(ONE);
+        var outputColor:IRegister   = reserveTempRegister();
+        var borderMargins:IRegister = reserveTempRegister();
+        var cellMargins:IRegister   = reserveTempRegister();
+        var cellPosition:IRegister  = reserveTempRegister();
+        var tempColor:IRegister     = reserveTempRegister();
+        var tempRegisterA:IRegister = reserveTempRegister();
+        var tempRegisterB:IRegister = reserveTempRegister();
+        var zero:IComponent         = getComponentConstant(ZERO);
+        var one:IComponent          = getComponentConstant(ONE);
 
         move(outputColor, backgroundColor);
 

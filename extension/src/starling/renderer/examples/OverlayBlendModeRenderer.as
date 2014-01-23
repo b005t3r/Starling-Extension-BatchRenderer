@@ -11,7 +11,7 @@ import com.barliesque.agal.TextureFlag;
 import com.barliesque.shaders.macro.Blend;
 
 import starling.renderer.BatchRenderer;
-import starling.renderer.constant.ConstantType;
+import starling.renderer.ShaderType;
 import starling.renderer.renderer_internal;
 import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
@@ -38,8 +38,8 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
     public function OverlayBlendModeRenderer() {
         setVertexFormat(createVertexFormat());
 
-        addComponentConstant(HALF, ConstantType.FRAGMENT, 0.5);
-        addComponentConstant(ONE, ConstantType.FRAGMENT, 1.0);
+        addComponentConstant(HALF, ShaderType.FRAGMENT, 0.5);
+        addComponentConstant(ONE, ShaderType.FRAGMENT, 1.0);
     }
 
     public function get bottomLayerTexture():Texture { return getInputTexture(BOTTOM_TEXTURE); }
@@ -70,19 +70,49 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         var flags:Array             = [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE];
         var bottomTexture:ISampler  = getTextureSampler(BOTTOM_TEXTURE);
         var topTexture:ISampler     = getTextureSampler(TOP_TEXTURE);
-        var bottomColor:IRegister   = TEMP[0];
-        var topColor:IRegister      = TEMP[1];
-        var outputColor:IRegister   = TEMP[2];
+        var bottomColor:IRegister   = reserveTempRegister();
+        var topColor:IRegister      = reserveTempRegister();
+        var overlayColor:IRegister  = reserveTempRegister();
+        var outputColor:IRegister   = reserveTempRegister();
         var half:IComponent         = getComponentConstant(HALF);
         var one:IComponent          = getComponentConstant(ONE);
 
         sampleTexture(bottomColor, uvBottom, bottomTexture, flags);
         sampleTexture(topColor, uvTop, topTexture, flags);
 
-        Blend.overlay(outputColor, bottomColor, topColor, one, half, TEMP[3], TEMP[4],TEMP[5]);
-        move(outputColor.a, bottomColor.a);
+        var temps:Array = reserveTempRegisters(3);
+        {
+            Blend.overlay(overlayColor, bottomColor, topColor, one, half, temps[0], temps[1], temps[2]);
+            move(overlayColor.a, topColor.a);
+        }
+        freeTempRegisters(temps);
+
+        alphaBlend(outputColor, bottomColor, overlayColor, one);
+
+        // uncomment for masking the bottom layer with top layer's alpha channel
+        //move(outputColor, overlayColor);
 
         move(OUTPUT, outputColor);
+    }
+
+    private function alphaBlend(dest:IRegister, baseColor:IRegister, blendColor:IRegister, one:IComponent):void {
+        if (dest == baseColor) throw new Error("'dest' and 'baseColor' can not be the same register");
+        if (dest == blendColor) throw new Error("'dest' and 'blendColor' can not be the same register");
+
+        var temp:IRegister = reserveTempRegister();
+
+        comment("out.a = src.a + dst.a * (1 - src.a)");
+        subtract(temp.a, one, blendColor.a);
+        multiply(temp.a, temp.a, baseColor.a);
+        add(dest.a, blendColor.a, temp.a);
+
+        comment("out.rgb = (src.rgb * src.a + dst.rgb * dst.a * (1 - src.a)) / out.a");
+        multiply(temp.rgb, blendColor.rgb, blendColor.a);
+        multiply(dest.rgb, baseColor.rgb, temp.a);
+        add(dest.rgb, temp.rgb, dest.rgb);
+        divide(dest.rgb, dest.rgb, dest.a);
+
+        freeTempRegister(temp);
     }
 
     private function createVertexFormat():VertexFormat {

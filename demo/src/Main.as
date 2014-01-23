@@ -1,9 +1,10 @@
 package {
 
+import demos.OverlayDemo;
+
 import flash.display.Sprite;
 import flash.display.StageAlign;
 import flash.display.StageScaleMode;
-import flash.display3D.Context3DProfile;
 import flash.display3D.Context3DRenderMode;
 import flash.events.Event;
 import flash.system.Capabilities;
@@ -25,7 +26,10 @@ public class Main extends Sprite {
         stage.scaleMode = StageScaleMode.NO_SCALE;
         stage.align = StageAlign.TOP_LEFT;
 
-        var starling:Starling = new Starling(OverlayDemo, stage, null, null, Context3DRenderMode.AUTO, ["baselineExtended", "baseline", "baselineConstrained"]);
+        // change this to start a different demo: BlueprintDemo, MeshDemo, OverlayDemo, SimpleDemo
+        var demoClass:Class = OverlayDemo;
+
+        var starling:Starling = new Starling(demoClass, stage, null, null, Context3DRenderMode.AUTO, ["baselineExtended", "baseline", "baselineConstrained"]);
         starling.simulateMultitouch = false;
         starling.enableErrorChecking = Capabilities.isDebugger;
         starling.antiAliasing = 10;

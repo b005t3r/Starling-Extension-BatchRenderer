@@ -4,12 +4,11 @@
  * Time: 12:08
  */
 package starling.renderer.examples {
-import starling.renderer.*;
-
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
 import com.barliesque.agal.TextureFlag;
 
+import starling.renderer.*;
 import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
 

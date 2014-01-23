@@ -3,7 +3,7 @@
  * Date: 17/01/14
  * Time: 14:10
  */
-package {
+package demos {
 import flash.geom.Point;
 
 import starling.display.BatchRendererWrapper;
@@ -16,7 +16,6 @@ import starling.events.TouchPhase;
 import starling.renderer.BatchRendererUtil;
 import starling.renderer.examples.ColoredGeometryRenderer;
 import starling.renderer.examples.TexturedGeometryRenderer;
-import starling.textures.Texture;
 import starling.utils.Color;
 
 public class MeshDemo extends Sprite {

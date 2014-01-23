@@ -8,10 +8,7 @@ import flash.geom.Matrix;
 import flash.geom.Point;
 import flash.geom.Rectangle;
 
-import starling.textures.SubTexture;
-
 import starling.textures.Texture;
-
 import starling.utils.MatrixUtil;
 
 use namespace renderer_internal;

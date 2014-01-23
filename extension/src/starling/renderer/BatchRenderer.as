@@ -20,15 +20,12 @@ import flash.geom.Matrix;
 import flash.geom.Matrix3D;
 
 import starling.core.RenderSupport;
-
 import starling.core.Starling;
 import starling.display.BlendMode;
 import starling.errors.MissingContextError;
 import starling.renderer.constant.ComponentConstant;
-import starling.renderer.constant.ConstantType;
 import starling.renderer.constant.RegisterConstant;
 import starling.renderer.vertex.VertexFormat;
-import starling.textures.Texture;
 import starling.textures.Texture;
 import starling.utils.Color;
 import starling.utils.MatrixUtil;
@@ -64,28 +61,31 @@ use namespace renderer_internal;
  * BatchRendererWrapper instance (a custom DisplayObject class).
  */
 public class BatchRenderer extends EasierAGAL {
-    public static const PROJECTION_MATRIX:String            = "projectionMatrix";
+    public static const PROJECTION_MATRIX:String                = "projectionMatrix";
 
-    private static var _projectionMatrix:Matrix             = new Matrix();
-    private static var _helperMatrix:Matrix                 = new Matrix();
-    private static var _matrix3D:Matrix3D                   = new Matrix3D();
-    private static var _vertexConstants:Vector.<Number>     = new <Number>[];
-    private static var _fragmentConstants:Vector.<Number>   = new <Number>[];
+    private static var _projectionMatrix:Matrix                 = new Matrix();
+    private static var _helperMatrix:Matrix                     = new Matrix();
+    private static var _matrix3D:Matrix3D                       = new Matrix3D();
+    private static var _vertexConstants:Vector.<Number>         = new <Number>[];
+    private static var _fragmentConstants:Vector.<Number>       = new <Number>[];
 
-    private var _inputTextures:Vector.<Texture>     = new <Texture>[];
-    private var _inputTextureNames:Vector.<String>  = new <String>[];
+    private var _inputTextures:Vector.<Texture>                 = new <Texture>[];
+    private var _inputTextureNames:Vector.<String>              = new <String>[];
 
-    private var _vertexBuffer:VertexBuffer3D        = null;
-    private var _indexBuffer:IndexBuffer3D          = null;
-    private var _buffersDirty:Boolean               = true;
+    private var _vertexBuffer:VertexBuffer3D                    = null;
+    private var _indexBuffer:IndexBuffer3D                      = null;
+    private var _buffersDirty:Boolean                           = true;
 
     // vertex specific variables will be changed to VertexData once it's ready for customisation
-    private var _vertexRawData:Vector.<Number>      = new <Number>[];
-    private var _vertexFormat:VertexFormat          = null;
-    private var _triangleData:Vector.<uint>         = new <uint>[];
+    private var _vertexRawData:Vector.<Number>                  = new <Number>[];
+    private var _vertexFormat:VertexFormat                      = null;
+    private var _triangleData:Vector.<uint>                     = new <uint>[];
 
-    private var _registerConstants:Vector.<RegisterConstant>      = new <RegisterConstant>[];
-    private var _componentConstants:Vector.<ComponentConstant>    = new <ComponentConstant>[];
+    private var _registerConstants:Vector.<RegisterConstant>    = new <RegisterConstant>[];
+    private var _componentConstants:Vector.<ComponentConstant>  = new <ComponentConstant>[];
+
+    private var _usedVertexTempRegisters:Vector.<Boolean>       = new <Boolean>[];
+    private var _usedFragmentTempRegisters:Vector.<Boolean>     = new <Boolean>[];
 
     private var _currentProgramType:int = -1;
 
@@ -366,7 +366,10 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Returns a register holding a constant with the given name. Must be called inside a vertex or fragment shader. */
     protected function getRegisterConstant(name:String):IRegister {
-        if(_currentProgramType == ConstantType.VERTEX && name == PROJECTION_MATRIX)
+        if(_currentProgramType != ShaderType.VERTEX && _currentProgramType != ShaderType.FRAGMENT)
+            throw new IllegalOperationError("constant registers are available for vertex or fragment programs only");
+
+        if(_currentProgramType == ShaderType.VERTEX && name == PROJECTION_MATRIX)
             return CONST[0];
 
         var index:int = 0;
@@ -382,7 +385,7 @@ public class BatchRenderer extends EasierAGAL {
             }
             else {
                 // first four vc registers are reserved for the transformation matrix
-                return _currentProgramType == ConstantType.VERTEX ? CONST[index + 4] : CONST[index];
+                return _currentProgramType == ShaderType.VERTEX ? CONST[index + 4] : CONST[index];
             }
         }
 
@@ -391,6 +394,9 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Returns a component holding a constant with the given name. Must be called inside a vertex or fragment shader. */
     protected function getComponentConstant(name:String):IComponent {
+        if(_currentProgramType != ShaderType.VERTEX && _currentProgramType != ShaderType.FRAGMENT)
+            throw new IllegalOperationError("constant registers are available for vertex or fragment programs only");
+
         var index:int = 0;
         var count:int = _componentConstants.length;
         for(var i:int = 0; i < count; i++) {
@@ -407,7 +413,7 @@ public class BatchRenderer extends EasierAGAL {
                 var compIndex:int   = index % 4;
 
                 // first four vc registers are reserved for the transformation matrix
-                if(_currentProgramType == ConstantType.VERTEX)
+                if(_currentProgramType == ShaderType.VERTEX)
                     regIndex += 4;
 
                 switch(compIndex) {
@@ -426,7 +432,7 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Returns a register holding a vertex attribute with the given name. Must be called inside a vertex shader. */
     protected function getVertexAttribute(name:String):IRegister {
-        if(_currentProgramType != ConstantType.VERTEX)
+        if(_currentProgramType != ShaderType.VERTEX)
             throw new IllegalOperationError("attribute registers are available for vertex programs only");
 
         var index:int = _vertexFormat.getPropertyIndex(name);
@@ -436,12 +442,73 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Returns a texture sampler used to read texture with the given name. Must be called inside a fragment shader. */
     protected function getTextureSampler(textureName:String):ISampler {
-        if(_currentProgramType != ConstantType.FRAGMENT)
-            throw new IllegalOperationError("texture samplers are available for vertex programs only");
+        if(_currentProgramType != ShaderType.FRAGMENT)
+            throw new IllegalOperationError("texture samplers are available for fragment programs only");
 
         var index:int = getInputTextureIndex(textureName);
 
         return SAMPLER[index];
+    }
+
+    /** Reserves first unreserved temporary register and returns it. Must be called inside a vertex or fragment shader. */
+    protected function reserveTempRegister():IRegister {
+        var flags:Vector.<Boolean>;
+
+        if(_currentProgramType == ShaderType.VERTEX)
+            flags = _usedVertexTempRegisters;
+        else if(_currentProgramType == ShaderType.FRAGMENT)
+            flags = _usedFragmentTempRegisters;
+        else
+            throw new IllegalOperationError("temporary registers are available for vertex or fragment programs only");
+
+        var count:int = flags.length;
+        for(var i:int = 0; i < count; i++) {
+            var reserved:Boolean = flags[i];
+
+            if(reserved)
+                continue;
+
+            flags[i] = true;
+            return TEMP[i];
+        }
+
+        throw new Error("no more temporary registers left to use; free unused registers first");
+    }
+
+    /** Frees the temporary register, so it will be possible to reserve it again. Must be called inside a vertex or fragment shader. */
+    protected function freeTempRegister(register:IRegister):void {
+        var flags:Vector.<Boolean>;
+
+        if(_currentProgramType == ShaderType.VERTEX)
+            flags = _usedVertexTempRegisters;
+        else if(_currentProgramType == ShaderType.FRAGMENT)
+            flags = _usedFragmentTempRegisters;
+        else
+            throw new IllegalOperationError("temporary registers are available for vertex or fragment programs only");
+
+        var index:int = TEMP.indexOf(register);
+
+        if(index < 0)
+            throw new ArgumentError("value passed is not a temporary register");
+
+        flags[index] = false;
+    }
+
+
+    /** Reserves multiple unreserved temporary registers and returns them. Must be called inside a vertex or fragment shader. */
+    protected function reserveTempRegisters(count:int):Array {
+        var registers:Array = [];
+
+        for(var i:int = 0; i < count; ++i)
+            registers[i] = reserveTempRegister();
+
+        return registers;
+    }
+
+    /** Frees multiple temporary registers. Must be called inside a vertex or fragment shader. */
+    protected function freeTempRegisters(registers:Array):void {
+        for(var i:int = 0; i < registers.length; ++i)
+            freeTempRegister(registers[i])
     }
 
     /** Abstract method. Override to provide vertex shader code. */
@@ -451,7 +518,11 @@ public class BatchRenderer extends EasierAGAL {
     protected function fragmentShaderCode():void { throw new Error("abstract method call"); }
 
     override protected function _vertexShader():void {
-        _currentProgramType = ConstantType.VERTEX;
+        _currentProgramType = ShaderType.VERTEX;
+
+        _usedVertexTempRegisters.length = 0;
+        for(var i:int = 0; i < TEMP.length; i++)
+            _usedFragmentTempRegisters[i] = false;
 
         vertexShaderCode();
 
@@ -459,11 +530,16 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     override protected function _fragmentShader():void {
-        _currentProgramType = ConstantType.FRAGMENT;
+        _currentProgramType = ShaderType.FRAGMENT;
+
+        _usedFragmentTempRegisters.length = 0;
+        for(var i:int = 0; i < TEMP.length; i++)
+            _usedFragmentTempRegisters[i] = false;
 
         fragmentShaderCode();
 
-        _currentProgramType = -1;
+        _currentProgramType                 = -1;
+        _usedFragmentTempRegisters.length   = 0;
     }
 
     /** Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers. */
@@ -504,7 +580,7 @@ public class BatchRenderer extends EasierAGAL {
         for(i = 0; i < count; ++i) {
             var regConstant:RegisterConstant = _registerConstants[i];
 
-            if(regConstant.type == ConstantType.VERTEX) {
+            if(regConstant.type == ShaderType.VERTEX) {
                 context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, vertexIndex, regConstant.values, 1);
                 ++vertexIndex;
             }
@@ -521,7 +597,7 @@ public class BatchRenderer extends EasierAGAL {
         for(i = 0; i < count; ++i) {
             var compConstant:ComponentConstant = _componentConstants[i];
 
-            if(compConstant.type == ConstantType.VERTEX)
+            if(compConstant.type == ShaderType.VERTEX)
                 _vertexConstants[_vertexConstants.length] = compConstant.value;
             else
                 _fragmentConstants[_fragmentConstants.length] = compConstant.value;

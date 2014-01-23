@@ -3,13 +3,9 @@
  * Date: 14/01/14
  * Time: 13:33
  */
-package {
-import flash.geom.Matrix;
-
+package demos {
 import starling.animation.Transitions;
-
 import starling.animation.Tween;
-
 import starling.core.Starling;
 import starling.display.BatchRendererWrapper;
 import starling.display.BlendMode;
@@ -17,8 +13,8 @@ import starling.display.Image;
 import starling.display.Sprite;
 import starling.events.Event;
 import starling.renderer.BatchRendererUtil;
-import starling.renderer.examples.ColoredGeometryRenderer;
 import starling.renderer.RenderingSettings;
+import starling.renderer.examples.ColoredGeometryRenderer;
 import starling.renderer.examples.TexturedGeometryRenderer;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;

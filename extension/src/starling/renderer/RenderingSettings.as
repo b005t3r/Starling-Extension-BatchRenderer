@@ -8,7 +8,6 @@ import flash.geom.Matrix;
 import flash.geom.Rectangle;
 
 import starling.display.BlendMode;
-import starling.textures.Texture;
 
 public class RenderingSettings {
     private var _premultipliedAlpha:Boolean     = false;
