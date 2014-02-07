@@ -14,10 +14,12 @@ import flash.display3D.Context3D;
 import flash.display3D.Context3DProgramType;
 import flash.display3D.Context3DVertexBufferFormat;
 import flash.display3D.IndexBuffer3D;
+import flash.display3D.Program3D;
 import flash.display3D.VertexBuffer3D;
 import flash.errors.IllegalOperationError;
 import flash.geom.Matrix;
 import flash.geom.Matrix3D;
+import flash.utils.Dictionary;
 
 import starling.core.RenderSupport;
 import starling.core.Starling;
@@ -63,6 +65,8 @@ use namespace renderer_internal;
 public class BatchRenderer extends EasierAGAL {
     public static const PROJECTION_MATRIX:String                = "projectionMatrix";
 
+    private static var _cachedPrograms:Dictionary               = new Dictionary();
+
     private static var _projectionMatrix:Matrix                 = new Matrix();
     private static var _helperMatrix:Matrix                     = new Matrix();
     private static var _matrix3D:Matrix3D                       = new Matrix3D();
@@ -87,7 +91,7 @@ public class BatchRenderer extends EasierAGAL {
     private var _usedVertexTempRegisters:Vector.<Boolean>       = new <Boolean>[];
     private var _usedFragmentTempRegisters:Vector.<Boolean>     = new <Boolean>[];
 
-    private var _currentProgramType:int = -1;
+    private var _currentProgramType:int                         = -1;
 
     /** Renders geometry data to back buffer usign Starling's RenderSupport. */
     public function renderToBackBuffer(support:RenderSupport, premultipliedAlpha:Boolean):void {
@@ -176,6 +180,33 @@ public class BatchRenderer extends EasierAGAL {
         if(_indexBuffer != null) _indexBuffer.dispose();
 
         super.dispose();
+    }
+
+    override public function upload(context:Context3D):Program3D {
+        var cachedID:String = cachedProgramID;
+
+        if(cachedID == null)
+            return super.upload(context);
+
+        if(_cachedPrograms[cachedID] == null)
+            return (_cachedPrograms[cachedID] = super.upload(context));
+        else
+            return _cachedPrograms[cachedID];
+    }
+
+    override public function get program():Program3D {
+        var cachedID:String = cachedProgramID;
+        var prog:Program3D  = super.program;
+
+        if(cachedID == null)
+            return prog;
+
+        if(prog == null)
+            return null;
+        else if(_cachedPrograms[cachedID] == null)
+            return (_cachedPrograms[cachedID] = prog);
+        else
+            return _cachedPrograms[cachedID];
     }
 
     /** Provided a registered texture name, returns its sampler index. */
@@ -363,6 +394,9 @@ public class BatchRenderer extends EasierAGAL {
 
         return -1;
     }
+
+    /** Return non-null string to share this instance's program with other instances returning the same ID. */
+    protected function get cachedProgramID():String { return null; }
 
     /** Returns a register holding a constant with the given name. Must be called inside a vertex or fragment shader. */
     protected function getRegisterConstant(name:String):IRegister {

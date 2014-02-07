@@ -83,6 +83,8 @@ public class BlueprintPatternRenderer extends BatchRenderer {
             setVertexData(i, _lineSizesID, borderWidth, markWidth, markLength, markSpacing);
     }
 
+    override protected function get cachedProgramID():String { return "BlueprintPatternRenderer"; }
+
     override protected function vertexShaderCode():void {
         comment("output vertex position");
         multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));
