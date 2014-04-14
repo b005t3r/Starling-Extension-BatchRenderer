@@ -10,12 +10,15 @@ import flash.geom.Rectangle;
 import starling.core.RenderSupport;
 import starling.renderer.BatchRenderer;
 import starling.renderer.BatchRendererUtil;
+import starling.utils.MatrixUtil;
 
 /**
  * Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list.
  * Useful for creating custom display objects.
  */
 public class BatchRendererWrapper extends DisplayObject {
+    private static var _matrix:Matrix = new Matrix();
+
     protected var _renderer:BatchRenderer;
     private var _premultipliedAlpha:Boolean;
 
@@ -49,7 +52,7 @@ public class BatchRendererWrapper extends DisplayObject {
     override public function getBounds(targetSpace:DisplayObject, resultRect:Rectangle = null):Rectangle {
         if (resultRect == null) resultRect = new Rectangle();
 
-        var transformationMatrix:Matrix = getTransformationMatrix(targetSpace);
+        var transformationMatrix:Matrix = getTransformationMatrix(targetSpace, _matrix);
 
         return BatchRendererUtil.getGeometryBounds(_renderer, _positionID, 0, -1, resultRect, transformationMatrix);
     }
