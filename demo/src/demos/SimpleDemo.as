@@ -12,10 +12,10 @@ import starling.display.BlendMode;
 import starling.display.Image;
 import starling.display.Sprite;
 import starling.events.Event;
-import starling.renderer.BatchRendererUtil;
+import starling.renderer.GeometryDataUtil;
 import starling.renderer.RenderingSettings;
-import starling.renderer.examples.ColoredGeometryRenderer;
-import starling.renderer.examples.TexturedGeometryRenderer;
+import starling.renderer.examples.colored.ColoredGeometryRenderer;
+import starling.renderer.examples.textured.TexturedGeometryRenderer;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;
 
@@ -42,7 +42,7 @@ public class SimpleDemo extends Sprite {
         var vertex:int;
 
         // render colored quad and triangle
-        vertex = BatchRendererUtil.addQuad(_coloredRenderer);
+        vertex = GeometryDataUtil.addQuad(_coloredRenderer);
         _coloredRenderer.setVertexPosition(vertex    ,  10,  10);
         _coloredRenderer.setVertexPosition(vertex + 1, 120,  10);
         _coloredRenderer.setVertexPosition(vertex + 2,  30, 90);
@@ -53,7 +53,7 @@ public class SimpleDemo extends Sprite {
         _coloredRenderer.setVertexColor(vertex + 2, 0.0, 0.0, 1.0, 1.0);
         _coloredRenderer.setVertexColor(vertex + 3, 1.0, 0.0, 1.0, 1.0);
 
-        vertex = BatchRendererUtil.addTriangle(_coloredRenderer);
+        vertex = GeometryDataUtil.addTriangle(_coloredRenderer);
         _coloredRenderer.setVertexPosition(vertex    , 350,  10);
         _coloredRenderer.setVertexPosition(vertex + 1,  50, 450);
         _coloredRenderer.setVertexPosition(vertex + 2, 550, 350);
@@ -67,7 +67,7 @@ public class SimpleDemo extends Sprite {
         _texturedRenderer.inputTexture = Texture.fromBitmap(new Bird());
 
         // render textured quad
-        vertex = BatchRendererUtil.addQuad(_texturedRenderer);
+        vertex = GeometryDataUtil.addQuad(_texturedRenderer);
         _texturedRenderer.setVertexPosition(vertex    ,  0,    0);
         _texturedRenderer.setVertexPosition(vertex + 1, 100,   0);
         _texturedRenderer.setVertexPosition(vertex + 2,   0, 100);

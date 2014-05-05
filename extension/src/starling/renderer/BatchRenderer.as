@@ -27,7 +27,8 @@ import starling.display.BlendMode;
 import starling.errors.MissingContextError;
 import starling.renderer.constant.ComponentConstant;
 import starling.renderer.constant.RegisterConstant;
-import starling.renderer.vertex.VertexFormat;
+import starling.renderer.GeometryData;
+import starling.renderer.VertexFormat;
 import starling.textures.Texture;
 import starling.utils.Color;
 import starling.utils.MatrixUtil;
@@ -76,14 +77,8 @@ public class BatchRenderer extends EasierAGAL {
     private var _inputTextures:Vector.<Texture>                 = new <Texture>[];
     private var _inputTextureNames:Vector.<String>              = new <String>[];
 
-    private var _vertexBuffer:VertexBuffer3D                    = null;
-    private var _indexBuffer:IndexBuffer3D                      = null;
-    private var _buffersDirty:Boolean                           = true;
-
-    // vertex specific variables will be changed to VertexData once it's ready for customisation
-    private var _vertexRawData:Vector.<Number>                  = new <Number>[];
     private var _vertexFormat:VertexFormat                      = null;
-    private var _triangleData:Vector.<uint>                     = new <uint>[];
+    private var _batchedGeometry:GeometryData                   = null;
 
     private var _registerConstants:Vector.<RegisterConstant>    = new <RegisterConstant>[];
     private var _componentConstants:Vector.<ComponentConstant>  = new <ComponentConstant>[];
@@ -93,15 +88,21 @@ public class BatchRenderer extends EasierAGAL {
 
     private var _currentProgramType:int                         = -1;
 
-    /** Renders geometry data to back buffer usign Starling's RenderSupport. */
+    public function BatchRenderer(vertexFormat:VertexFormat) {
+        _vertexFormat = vertexFormat;
+        _batchedGeometry = new GeometryData(vertexFormat);
+    }
+
+    /** Renders geometry data to back buffer using Starling's RenderSupport. */
     public function renderToBackBuffer(support:RenderSupport, premultipliedAlpha:Boolean):void {
         var context:Context3D = Starling.context;
 
         if(context == null)
             throw new MissingContextError();
 
-        if(_buffersDirty)
-            createBuffers(context);
+        var buffersReady:Boolean = _batchedGeometry.createBuffers(context);
+
+        if(! buffersReady) return;
 
         // always call this method when you write custom rendering code!
         // it causes all previously batched quads/images to render.
@@ -116,17 +117,17 @@ public class BatchRenderer extends EasierAGAL {
         // activate program (shader) and set the required buffers, constants, texture
         context.setProgram(upload(context));
 
-        setVertexBuffers(context);
+        _batchedGeometry.setVertexBuffers(context);
         setInputTextures(context);
 
         context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, support.mvpMatrix3D, true); // vc0-vc3
         setProgramConstants(context, 4, 0);
 
         // render
-        context.drawTriangles(_indexBuffer, 0, _triangleData.length / 3);
+        context.drawTriangles(_batchedGeometry.indexBuffer, 0, _batchedGeometry.triangleData.length / 3);
 
         unsetInputTextures(context);
-        unsetVertexBuffers(context);
+        _batchedGeometry.unsetVertexBuffers(context);
     }
 
     /** Renders geometry data to texture. Clears the texture first (Stage3D requirement). */
@@ -136,8 +137,9 @@ public class BatchRenderer extends EasierAGAL {
         if(context == null)
             throw new MissingContextError();
 
-        if(_buffersDirty)
-            createBuffers(context);
+        var buffersReady:Boolean = _batchedGeometry.createBuffers(context);
+
+        if(! buffersReady) return;
 
         // render to output texture and clear it
         context.setRenderToTexture(outputTexture.base);
@@ -159,25 +161,29 @@ public class BatchRenderer extends EasierAGAL {
         // activate program (shader) and set the required buffers, constants, texture
         context.setProgram(upload(context));
 
-        setVertexBuffers(context);
+        _batchedGeometry.setVertexBuffers(context);
         setInputTextures(context);
 
         context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); // vc0-vc3
         setProgramConstants(context, 4, 0);
 
         // render
-        context.drawTriangles(_indexBuffer, 0, _triangleData.length / 3);
+        context.drawTriangles(_batchedGeometry.indexBuffer, 0, _batchedGeometry.triangleData.length / 3);
 
         unsetInputTextures(context);
-        unsetVertexBuffers(context);
+        _batchedGeometry.unsetVertexBuffers(context);
     }
 
-    /** Number of registered vertices. */
-    public function get vertexCount():int { return _vertexRawData.length / _vertexFormat.totalSize; }
+    public function appendGeometry(geometry:GeometryData, matrix:Matrix = null, positionID:int = 0):void {
+        _batchedGeometry.append(geometry, matrix, positionID);
+    }
+
+    public function resetGeometry():void {
+        _batchedGeometry.clear();
+    }
 
     override public function dispose():void {
-        if(_vertexBuffer != null) _vertexBuffer.dispose();
-        if(_indexBuffer != null) _indexBuffer.dispose();
+        _batchedGeometry.dispose();
 
         super.dispose();
     }
@@ -235,88 +241,6 @@ public class BatchRenderer extends EasierAGAL {
         else if(texture != null) {
             _inputTextures[_inputTextures.length]           = texture;
             _inputTextureNames[_inputTextureNames.length]   = name;
-        }
-    }
-
-    // also erases all vertices
-    /** Sets up vertex data. Calling this method is obligatory when subclassing. */
-    renderer_internal function setVertexFormat(format:VertexFormat):void {
-        _buffersDirty = true;
-
-        _vertexRawData.length   = 0;
-        _triangleData.length    = 0;
-        _vertexFormat           = format;
-    }
-
-    /**
-     * Adds a number of verices to this renderer and returns the first index added.
-     * These vertices are not yet part of any geometry - call addTriangle() and pass vertex indexes to build
-     * geometry segments.
-     */
-    renderer_internal function addVertices(count:int):int {
-        _buffersDirty = true;
-
-        var firstIndex:int      = vertexCount;
-        _vertexRawData.length  += _vertexFormat.totalSize * count;
-
-
-        return firstIndex;
-    }
-
-    /** Adds a new triangle out of registered vertices. */
-    renderer_internal function addTriangle(v1:int, v2:int, v3:int):void {
-        _buffersDirty = true;
-
-        _triangleData[_triangleData.length] = v1;
-        _triangleData[_triangleData.length] = v2;
-        _triangleData[_triangleData.length] = v3;
-    }
-
-    /**
-     * Returns vertex data associated with a given vertex.
-     *
-     * @param vertex    vertex index
-     * @param id        data id ('va' register index), @see VertexFormat
-     * @param data      optional vector to hold up to 4 Numbers representing the data
-     * @return          vector holding the vertex data
-     */
-    renderer_internal function getVertexData(vertex:int, id:int, data:Vector.<Number> = null):Vector.<Number> {
-        var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
-        var size:int    = _vertexFormat.getSize(id);
-
-        if(data == null) data = new Vector.<Number>(size);
-
-        for(var i:int = 0; i < size; ++i)
-            data[i] = _vertexRawData[index + i];
-
-        return data;
-    }
-
-    /**
-     * Sets data associated with the given vertex.
-     * Keep in mind only as many components will be used, as required by the VertexFormat set.
-     *
-     * @param vertex    vertex index
-     * @param id        data id ('va' register index), @see VertexFormat
-     * @param x         first component value
-     * @param y         second component value
-     * @param z         third component value
-     * @param w         fourth component value
-     */
-    renderer_internal function setVertexData(vertex:int, id:int, x:Number, y:Number = NaN, z:Number = NaN, w:Number = NaN):void {
-        var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
-        var size:int    = _vertexFormat.getSize(id);
-
-        //noinspection FallthroughInSwitchStatementJS
-        switch(size) {
-            case 4: if(_vertexRawData[index + 3] != w) { _buffersDirty = true; _vertexRawData[index + 3] = w; }
-            case 3: if(_vertexRawData[index + 2] != z) { _buffersDirty = true; _vertexRawData[index + 2] = z; }
-            case 2: if(_vertexRawData[index + 1] != y) { _buffersDirty = true; _vertexRawData[index + 1] = y; }
-            case 1: if(_vertexRawData[index    ] != x) { _buffersDirty = true; _vertexRawData[index    ] = x; }
-                break;
-
-            default:
-                throw new Error("vertex data size invalid (" + size + "for vertex: " + vertex + ", data id: " + id);
         }
     }
 
@@ -576,20 +500,6 @@ public class BatchRenderer extends EasierAGAL {
         _usedFragmentTempRegisters.length   = 0;
     }
 
-    /** Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers. */
-    private function createBuffers(context:Context3D):void {
-        _buffersDirty = false;
-
-        if (_vertexBuffer) _vertexBuffer.dispose();
-        if (_indexBuffer)  _indexBuffer.dispose();
-
-        _vertexBuffer = context.createVertexBuffer(vertexCount, _vertexFormat.totalSize);
-        _vertexBuffer.uploadFromVector(_vertexRawData, 0, vertexCount);
-
-        _indexBuffer = context.createIndexBuffer(_triangleData.length);
-        _indexBuffer.uploadFromVector(_triangleData, 0, _triangleData.length);
-    }
-
     private function setOrthographicProjection(x:Number, y:Number, width:Number, height:Number, transform:Matrix = null):Matrix3D {
         _projectionMatrix.setTo(
             2.0 / width, 0, 0,
@@ -676,34 +586,6 @@ public class BatchRenderer extends EasierAGAL {
 
             context.setTextureAt(i, null);
         }
-    }
-
-    private function setVertexBuffers(context:Context3D):void {
-        var count:int = _vertexFormat.propertyCount;
-        for(var i:int = 0; i < count; i++) {
-            var size:int    = _vertexFormat.getSize(i);
-            var offset:int  = _vertexFormat.getOffset(i);
-
-            var bufferFormat:String;
-
-            switch(size) {
-                case 1: bufferFormat = Context3DVertexBufferFormat.FLOAT_1; break;
-                case 2: bufferFormat = Context3DVertexBufferFormat.FLOAT_2; break;
-                case 3: bufferFormat = Context3DVertexBufferFormat.FLOAT_3; break;
-                case 4: bufferFormat = Context3DVertexBufferFormat.FLOAT_4; break;
-
-                default:
-                    throw new Error("vertex data size invalid (" + size + ") for data index: " + i);
-            }
-
-            context.setVertexBufferAt(i, _vertexBuffer, offset, bufferFormat);
-        }
-    }
-
-    private function unsetVertexBuffers(context:Context3D):void {
-        var count:int = _vertexFormat.propertyCount;
-        for(var i:int = 0; i < count; i++)
-            context.setVertexBufferAt(i, null);
     }
 }
 }

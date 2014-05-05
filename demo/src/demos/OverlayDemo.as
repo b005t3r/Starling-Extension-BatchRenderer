@@ -8,9 +8,10 @@ import starling.display.BatchRendererWrapper;
 import starling.display.BlendMode;
 import starling.display.Sprite;
 import starling.events.Event;
-import starling.renderer.BatchRendererUtil;
+import starling.renderer.GeometryDataUtil;
 import starling.renderer.RenderingSettings;
-import starling.renderer.examples.OverlayBlendModeRenderer;
+import starling.renderer.examples.overlay.OverlayBlendModeGeometryData;
+import starling.renderer.examples.overlay.OverlayBlendModeRenderer;
 import starling.textures.Texture;
 
 public class OverlayDemo extends Sprite {
@@ -25,35 +26,40 @@ public class OverlayDemo extends Sprite {
     }
 
     private function onAddedToStage(event:Event):void {
-        var _overlayRenderer:OverlayBlendModeRenderer = new OverlayBlendModeRenderer();
+        var overlayRenderer:OverlayBlendModeRenderer = new OverlayBlendModeRenderer();
 
-        _overlayRenderer.topLayerTexture    = Texture.fromBitmap(new Bird());
-        _overlayRenderer.bottomLayerTexture = Texture.fromBitmap(new Fibers());
+        overlayRenderer.topLayerTexture    = Texture.fromBitmap(new Bird());
+        overlayRenderer.bottomLayerTexture = Texture.fromBitmap(new Fibers());
+
+        var overlayGeometry:OverlayBlendModeGeometryData = new OverlayBlendModeGeometryData();
 
         // render textured quad
-        var vertex:int = BatchRendererUtil.addQuad(_overlayRenderer);
-        _overlayRenderer.setVertexPosition(vertex, 0, 0);
-        _overlayRenderer.setVertexPosition(vertex + 1, 300, 0);
-        _overlayRenderer.setVertexPosition(vertex + 2, 0, 300);
-        _overlayRenderer.setVertexPosition(vertex + 3, 300, 300);
+        var vertex:int = GeometryDataUtil.addQuad(overlayGeometry);
+        overlayGeometry.setVertexPosition(vertex, 0, 0);
+        overlayGeometry.setVertexPosition(vertex + 1, 300, 0);
+        overlayGeometry.setVertexPosition(vertex + 2, 0, 300);
+        overlayGeometry.setVertexPosition(vertex + 3, 300, 300);
 
-        _overlayRenderer.setTopLayerVertexUV(vertex, 0, 0);
-        _overlayRenderer.setTopLayerVertexUV(vertex + 1, 1, 0);
-        _overlayRenderer.setTopLayerVertexUV(vertex + 2, 0, 1);
-        _overlayRenderer.setTopLayerVertexUV(vertex + 3, 1, 1);
+        overlayGeometry.setTopLayerVertexUV(vertex, 0, 0);
+        overlayGeometry.setTopLayerVertexUV(vertex + 1, 1, 0);
+        overlayGeometry.setTopLayerVertexUV(vertex + 2, 0, 1);
+        overlayGeometry.setTopLayerVertexUV(vertex + 3, 1, 1);
 
-        _overlayRenderer.setBottomLayerVertexUV(vertex, 0, 0);
-        _overlayRenderer.setBottomLayerVertexUV(vertex + 1, 1, 0);
-        _overlayRenderer.setBottomLayerVertexUV(vertex + 2, 0, 1);
-        _overlayRenderer.setBottomLayerVertexUV(vertex + 3, 1, 1);
+        overlayGeometry.setBottomLayerVertexUV(vertex, 0, 0);
+        overlayGeometry.setBottomLayerVertexUV(vertex + 1, 1, 0);
+        overlayGeometry.setBottomLayerVertexUV(vertex + 2, 0, 1);
+        overlayGeometry.setBottomLayerVertexUV(vertex + 3, 1, 1);
 
         var _settings:RenderingSettings = new RenderingSettings();
         _settings.clearColor = 0xcccccc;
         _settings.clearAlpha = 1.0;
         _settings.blendMode = BlendMode.NONE;
 
-        var wrapper:BatchRendererWrapper = new BatchRendererWrapper(_overlayRenderer);
+        var wrapper:BatchRendererWrapper = new BatchRendererWrapper();
         addChild(wrapper);
+
+        wrapper.renderer = overlayRenderer;
+        wrapper.geometry = overlayGeometry;
 
         wrapper.alignPivot();
         wrapper.x += wrapper.width / 2 + 100;

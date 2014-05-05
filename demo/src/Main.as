@@ -1,5 +1,7 @@
 package {
 
+import demos.BlueprintDemo;
+import demos.MeshDemo;
 import demos.OverlayDemo;
 
 import flash.display.Sprite;
