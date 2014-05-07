@@ -27,11 +27,12 @@ import starling.display.BlendMode;
 import starling.errors.MissingContextError;
 import starling.renderer.constant.ComponentConstant;
 import starling.renderer.constant.RegisterConstant;
+import starling.renderer.geometry.GeometryData;
+import starling.renderer.geometry.IGeometryData;
+import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
 import starling.utils.Color;
 import starling.utils.MatrixUtil;
-
-use namespace renderer_internal;
 
 /**
  * Renderer combines geometry data: vertex data such as position, uv, etc., triangle data, a shader program and
