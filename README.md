@@ -144,7 +144,7 @@ Also notice the singleton-like implementation - there's no need to create more t
 Creating a custom geometry
 --------------------------
 
-With *VertexFormat* ready, it's time to create. Please note subclassing is not necessary - you could use *GeometryData* instance and pass your custom vertex format in the constructor. However, creating a subclass makes accessing custom geometry properties more rasyeasy and clear, so this approach is adviced.
+With *VertexFormat* ready, it's time to create. Please note subclassing is not necessary - you could use *GeometryData* instance and pass your custom vertex format in the constructor. However, creating a subclass makes accessing custom geometry properties more easy and clear, so this approach is adviced.
 
 ```as3
 public class TexturedGeometryData extends GeometryData {
@@ -162,60 +162,46 @@ public class TexturedGeometryData extends GeometryData {
 }
 ```
 
-Adding property accessors
--------------------------
+Notice how *cachedInstance* is used to set the vertex format and access UV property fo your geometry.
 
-Talking about accessing properties, let's create some accessors for our geometry and shader data. Client code will call these to set up things to be rendered.
+Creating a custom renderer
+--------------------------
 
-```as3
-public static const INPUT_TEXTURE:String = "inputTexture";
-private var _positionID:int, _uvID:int;
-//...
-public function get inputTexture():Texture { return getInputTexture(INPUT_TEXTURE); } 
-public function set inputTexture(value:Texture):void { setInputTexture(INPUT_TEXTURE, value); }
-
-public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _positionID, position); }
-public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, _positionID, x, y); }   
-
-public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvID, uv); }                        
-public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }            
-```
-
-As you can see, they are all one-liners and all use internal *BatchRenderer* methods and vertex unique property IDs created when registering each property within *VertexFormat*. Now you can see what these IDs are for and how they let vertex properties to be accessed more efficiently than by using strings (hint: no string comparison is needed).
-
-Also, you've probably spotted the *inputTexture* property already, which does not use a vertex unique property ID. That's because textures are not set per vertex (duh!) - they are bound to one of the texture samplers. *BatchRenderer* makes setting and accessing textures really easy. You simply register as many as you need (but no more than Stage3D let's you to, I guess it's 8... or 4... let's make it your homework to find out), each with an unique name. Our renderer will only need one texture, so we simply call it *"inputTexture"* (kind of dull, I know). Same goes for constant registers (which we don't explicitly set here) - you set constants per shader, not per vertex.
-
-Writing shaders
----------------
-
-Once you have your vertex format defined and your property accessors in place, it's time to add some shaders. 
+Once you have your vertex format and geometry defined, it's time to write some shaders. 
 
 AGAL is the shader language used by Stage3D. It is a simple assembly language, which means it's both: a) easy to understand and b) next to impossible to actually learn and use. Seriously, to me, it was a nightmare... until I found out about EasyAGAL! EasyAGAL is a great compromise between writing an efficient, assembly code and writing an easy to read and understand, high level, abstract code. If you've never heard about it, don't worry - you'll get the hang of it in no time. If you think you won't, then... what the hell are you still doing here? :) This is a custom rendering extension after all, not an entry level tutorial! :)
 
 Sorry for that. Shaders. Here we go:
 
 ```as3
-public static const POSITION:String         = "position";
-public static const UV:String               = "uv";
-public static const INPUT_TEXTURE:String    = "inputTexture";
-//...
-// shader variables
-private var uv:IRegister = VARYING[0];  // v0 is used to pass interpolated uv from vertex to fragment shader
-//...
-override protected function vertexShaderCode():void {                                                              
-    comment("output vertex position");                                                                              
-    multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));                         
-    
-    comment("pass uv to fragment shader");                              
-    move(uv, getVertexAttribute(UV));                                                                         
-}
+public class TexturedGeometryRenderer extends BatchRenderer {
+    public static const INPUT_TEXTURE:String = "inputTexture";
 
-override protected function fragmentShaderCode():void {
-    var input:ISampler = getTextureSampler(INPUT_TEXTURE);
-    
-    comment("sample the texture and send resulting color to the output");
-    sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);                    
-}                                                                                                                   
+    // shader variables
+    private var uv:IRegister = VARYING[0];  // v0 is used to pass interpolated uv from vertex to fragment shader
+
+    public function TexturedGeometryRenderer() {
+        super(TexturedGeometryVertexFormat.cachedInstance);
+    }
+
+    public function get inputTexture():Texture { return getInputTexture(INPUT_TEXTURE); }
+    public function set inputTexture(value:Texture):void { setInputTexture(INPUT_TEXTURE, value); }
+
+    override protected function vertexShaderCode():void {
+        comment("output vertex position");
+        multiply4x4(OUTPUT, getVertexAttribute(VertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
+
+        comment("pass uv to fragment shader");
+        move(uv, getVertexAttribute(TexturedGeometryVertexFormat.UV));
+    }
+
+    override protected function fragmentShaderCode():void {
+        var input:ISampler = getTextureSampler(INPUT_TEXTURE);
+
+        comment("sample the texture and send resulting color to the output");
+        sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);
+    }
+}
 ```
 
 Every renderer is really a set of two shaders. As you can see, we have a vertex shader (implemented in *vertexShaderCode()*) and a fragment (pixel) shader (implemented in *fragmentShaderCode()*). I'm not going to get into AGAL or shader specific details, but if you're completely new to any of this, there are only three things you need to know:
@@ -229,6 +215,8 @@ As you can see there's no hardcoded registers there. Each vertex attribute regis
 Also notice how the UVs are passed. EasyAGAL's magic let's us define *VARYING* register 0 (*v0*) as a class variable, so in both of our shaders we don't have to reference UVs as *VARYING[0]* - we can simply use the variable. OK, it's nothing really spectacular, but it makes code much easier to read and understand.
 
 And finally the fragment shader. All it does is sampling the input texture using the interpolated UVs passed from vertex shader and sending the result color to the OUTPUT. All of this done using only one instruction and few self-describing variables. Again, it doesn't really matter with this particular shader if you code it in AGAL assembly or using fancy looking variables and functions, but with more complex shaders, it does make a difference.
+
+Also notice how the texture is set (using the *inputTexture* property of our subclass) and then accessed (using the subclass-defined *INPUT_TEXTURE* constant).
 
 Is that it?
 -----------
