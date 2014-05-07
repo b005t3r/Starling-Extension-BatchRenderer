@@ -79,6 +79,7 @@ public class BatchRenderer extends EasierAGAL {
 
     private var _geometries:Vector.<IGeometryData>              = new <IGeometryData>[];
     private var _matrices:Vector.<Matrix>                       = new <Matrix>[];
+    private var _cached:Boolean                                 = false;
 
     private var _vertexRawData:Vector.<Number>                  = new <Number>[];
     private var _vertexRawDataSize:int                          = 0;
@@ -107,13 +108,18 @@ public class BatchRenderer extends EasierAGAL {
         if(context == null)
             throw new MissingContextError();
 
-        var changed:Boolean = cacheGeometryData();
+        if(! _cached) {
+            var changed:Boolean = cacheGeometryData();
 
-        if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+            if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+                return;
+
+            if(changed)
+                createBuffers(context);
+        }
+        else if(_vertexRawDataSize == 0 || _triangleDataSize == 0) {
             return;
-
-        if(changed)
-            createBuffers(context);
+        }
 
         // always call this method when you write custom rendering code!
         // it causes all previously batched quads/images to render.
@@ -148,13 +154,18 @@ public class BatchRenderer extends EasierAGAL {
         if(context == null)
             throw new MissingContextError();
 
-        var changed:Boolean = cacheGeometryData();
+        if(! _cached) {
+            var changed:Boolean = cacheGeometryData();
 
-        if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+            if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+                return;
+
+            if(changed)
+                createBuffers(context);
+        }
+        else if(_vertexRawDataSize == 0 || _triangleDataSize == 0) {
             return;
-
-        if(changed)
-            createBuffers(context);
+        }
 
         // render to output texture and clear it
         context.setRenderToTexture(outputTexture.base);
@@ -189,14 +200,44 @@ public class BatchRenderer extends EasierAGAL {
         unsetVertexBuffers(context);
     }
 
-    public function appendGeometry(geometry:GeometryData, matrix:Matrix = null):void {
+    /**
+     * Adds a new geometry to render.
+     *
+     * @param geometry  geometry to render
+     * @param matrix    optional transformation matrix to use when rendering (not copied!), @default null
+     */
+    public function addGeometry(geometry:GeometryData, matrix:Matrix = null):void {
         _geometries[_geometries.length] = geometry;
         _matrices[_matrices.length]     = matrix
     }
 
-    public function resetGeometry():void {
+    /** Removes all geometries and their corresponding matrices. */
+    public function removeAllGeometries():void {
         _geometries.length = 0;
         _matrices.length = 0;
+    }
+
+    /**
+     * When renderer is cached, all previously added geometries are merged into a single batch and
+     * this batch is later rendered. All future changes to added geometries won't have any effect
+     * (geometries will be added or removed, but won't be rendered) until this property is set to false.
+     *
+     * @default false
+     */
+    public function get cached():Boolean { return _cached; }
+    public function set cached(value:Boolean):void {
+        if(value == _cached) return;
+
+        _cached = value;
+
+        if(_cached) {
+            cacheGeometryData();
+
+            if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+                return;
+
+            createBuffers(Starling.context);
+        }
     }
 
     override public function dispose():void {
@@ -574,10 +615,6 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers. */
     private function createBuffers(context:Context3D):void {
-        // can't create and upload an empty buffer
-        if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
-            return;
-
         if (_vertexBuffer) _vertexBuffer.dispose();
         if (_indexBuffer)  _indexBuffer.dispose();
 

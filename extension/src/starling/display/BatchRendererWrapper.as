@@ -72,16 +72,16 @@ public class BatchRendererWrapper extends DisplayObject {
         if(_renderer == null || _geometry == null) return;
 
         if(! _batchable) {
-            _renderer.resetGeometry();
-            _renderer.appendGeometry(_geometry);
+            _renderer.removeAllGeometries();
+            _renderer.addGeometry(_geometry);
 
             _renderer.renderToBackBuffer(support, _premultipliedAlpha);
         }
         else if(! _batched) {
             support.popMatrix();
 
-            _renderer.resetGeometry();
-            _renderer.appendGeometry(_geometry, transformationMatrix);
+            _renderer.removeAllGeometries();
+            _renderer.addGeometry(_geometry, transformationMatrix);
 
             var index:int = parent.getChildIndex(this);
 
@@ -93,7 +93,7 @@ public class BatchRendererWrapper extends DisplayObject {
                     break;
 
                 wrapper._batched = true;
-                _renderer.appendGeometry(wrapper._geometry, wrapper.transformationMatrix);
+                _renderer.addGeometry(wrapper._geometry, wrapper.transformationMatrix);
             }
 
             _renderer.renderToBackBuffer(support, _premultipliedAlpha);
