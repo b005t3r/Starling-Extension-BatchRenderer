@@ -106,9 +106,7 @@ public class SimpleDemo extends Sprite {
         addChild(new Image(_renderTexture));
 
         // colored renderer renders to the back buffer using a wrapper display object
-        var wrapper:BatchRendererWrapper = new BatchRendererWrapper();
-        wrapper.renderer = _coloredRenderer;
-        wrapper.geometry = _coloredGeometry;
+        var wrapper:BatchRendererWrapper = new BatchRendererWrapper(_coloredGeometry, _coloredRenderer);
         wrapper.alignPivot();
         wrapper.x += wrapper.width / 2 + 10;
         wrapper.y += wrapper.height / 2 + 10;

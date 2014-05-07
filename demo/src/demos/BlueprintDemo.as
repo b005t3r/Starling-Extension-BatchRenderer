@@ -11,19 +11,21 @@ import starling.display.BatchRendererWrapper;
 import starling.display.BlendMode;
 import starling.display.Sprite;
 import starling.events.Event;
-import starling.renderer.geometry.GeometryDataUtil;
 import starling.renderer.examples.blueprint.BlueprintPatternGeometryData;
 import starling.renderer.examples.blueprint.BlueprintPatternRenderer;
-import starling.renderer.examples.blueprint.BlueprintPatternVertexFormat;
+import starling.renderer.geometry.GeometryDataUtil;
 
 public class BlueprintDemo extends Sprite{
+    private var _renderer:BlueprintPatternRenderer;
 
     public function BlueprintDemo() {
         addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
     }
 
     private function onAddedToStage(event:Event):void {
-        for(var i:int = 0; i < 25;++i) {
+        _renderer = new BlueprintPatternRenderer();
+
+        for(var i:int = 0; i < 20;++i) {
             var wrapper:BatchRendererWrapper = addObject(Math.random() * 400 + 200, Math.random() * 300 + 200, Math.random() * 500 + 100, Math.random() * 400 + 50);
 
             var scaleMin:Number = Math.random() * 0.2 + 0.25;
@@ -61,11 +63,10 @@ public class BlueprintDemo extends Sprite{
         geometry.setGeometryMarkColor(0, 4, 0.85, 0.85, 0.85, 1);
         geometry.setGeometryLineSizes(0, 4, 2, 1, 5, 50);
 
-        var wrapper:BatchRendererWrapper = new BatchRendererWrapper();
-        wrapper.renderer    = new BlueprintPatternRenderer();
-        wrapper.geometry    = geometry;
-        wrapper.positionID  = BlueprintPatternVertexFormat.cachedInstance.positionID;
+        // note: all wrappers can use the same renderer instance
+        var wrapper:BatchRendererWrapper = new BatchRendererWrapper(geometry, _renderer);
         wrapper.blendMode   = BlendMode.NORMAL;
+        //wrapper.batchable   = false; // uncomment to disable batching
 
         wrapper.alignPivot();
         wrapper.x += x;

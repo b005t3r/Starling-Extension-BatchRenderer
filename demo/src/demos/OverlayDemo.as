@@ -55,11 +55,8 @@ public class OverlayDemo extends Sprite {
         _settings.clearAlpha = 1.0;
         _settings.blendMode = BlendMode.NONE;
 
-        var wrapper:BatchRendererWrapper = new BatchRendererWrapper();
+        var wrapper:BatchRendererWrapper = new BatchRendererWrapper(overlayGeometry, overlayRenderer);
         addChild(wrapper);
-
-        wrapper.renderer = overlayRenderer;
-        wrapper.geometry = overlayGeometry;
 
         wrapper.alignPivot();
         wrapper.x += wrapper.width / 2 + 100;

@@ -53,11 +53,8 @@ public class MeshDemo extends Sprite {
 
         //addColoredMesh(_coloredGeometry, 0, 0, 300, 300, 3);
 
-        _wrapper = new BatchRendererWrapper();
-        //_wrapper.geometry = _coloredGeometry;
-        _wrapper.geometry = _texturedGeometry;
-        //_wrapper.renderer = new ColoredGeometryRenderer();
-        _wrapper.renderer = texturedRenderer;
+        _wrapper = new BatchRendererWrapper(_texturedGeometry, texturedRenderer);
+        //_wrapper = new BatchRendererWrapper(_coloredGeometry, coloredRenderer);
         _wrapper.blendMode = BlendMode.NORMAL;
         _wrapper.alignPivot();
         _wrapper.x += 400; _wrapper.y += 300;
@@ -109,7 +106,7 @@ public class MeshDemo extends Sprite {
         var position:Vector.<Number> = new Vector.<Number>(2, true);
         var vertexPosition:Point = new Point();
 
-        if(touch = event.getTouch(_wrapper, TouchPhase.BEGAN)) {
+        if((touch = event.getTouch(_wrapper, TouchPhase.BEGAN)) != null) {
             location = touch.getLocation(_wrapper, location);
 
             _selectedVertex = 0;
@@ -127,12 +124,12 @@ public class MeshDemo extends Sprite {
                 }
             }
         }
-        else if(touch = event.getTouch(_wrapper, TouchPhase.MOVED)) {
+        else if((touch = event.getTouch(_wrapper, TouchPhase.MOVED)) != null) {
             location = touch.getLocation(_wrapper, location);
 
             _texturedGeometry.setVertexPosition(_selectedVertex, location.x, location.y);
         }
-        else if(event.getTouch(_wrapper, TouchPhase.ENDED)) {
+        else if(event.getTouch(_wrapper, TouchPhase.ENDED) != null) {
             _selectedVertex = -1;
         }
     }
