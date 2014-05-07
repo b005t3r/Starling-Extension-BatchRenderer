@@ -120,38 +120,32 @@ Doesn't look that scary, does it? Let's have a look at it in details.
 Subclassing
 ===========
 
-Many of BatchRenderer methods are "hidden" in a special *renderer_internal* namespace, so make sure to include this code:
-```as3
-use namespace renderer_internal;
-```
-before your newly created class.
-
 Creating a custom VertexFormat
 ------------------------------
 
-First you need to define your renderer's *VertexFormat* and set it:
+First you need to define your geometry's *VertexFormat*. Typically you do that by subclassing:
 ```as3
-public static const POSITION:String         = "position";
-public static const UV:String               = "uv";
-//...
-private var _positionID:int, _uvID:int;
-//...
-public function TexturedGeometryRenderer() {
-    setVertexFormat(createVertexFormat());
+public class TexturedGeometryVertexFormat extends VertexFormat {
+    public static const cachedInstance:TexturedGeometryVertexFormat = new TexturedGeometryVertexFormat();
+
+    public static const UV:String = "uv";
+
+    public var uvID:int;
+
+    public function TexturedGeometryVertexFormat() {
+        if(cachedInstance != null) throw new Error("creating new instance forbidded; use cachedInstance");
+
+        uvID = addProperty(UV, 2); // u, v; id: 1
+    }
 }
-//...
-private function createVertexFormat():VertexFormat {
-    var format:VertexFormat = new VertexFormat();
-
-    _positionID = format.addProperty(POSITION, 2);  // x, y; id: 0
-    _uvID       = format.addProperty(UV, 2);        // u, v; id: 1
-
-    return format;
-}
-
 ```
 
-*VertexFormat* is crucial - it tells the *BatchRenderer* implementation how and what different kinds of data are going to be stored in each vertex. With this (really simple) *TexturedGeometryRenderer* each vertex stores two kinds of data: vertex position in 2D space (*x*, *y*) and texture mapping coords (*u*, *v*). Also notice, each kind of data, when added to *VertexFormat* (by *addProperty()* method) is registered with an unique name (here *"position"* and *"uv"*, passed via static constants) and once registered, is given an unique ID (stored in *'_positionID'* and *'_uvID'*). The former can be used when writing shaders and the later is useful for efficiently accessing each property in AS3 code (more on these later).
+*VertexFormat* is crucial - it tells the *BatchRenderer* implementation what different kinds of data are stored in each vertex. With this (really simple) *TexturedGeometryVertexFormat* each vertex stores two kinds of data: vertex position (set by teh base class - every vertex has to store position, duh!) in 2D space (*x*, *y*) and texture mapping coords (set by the subclass - *u*, *v*). Also notice, each kind of data, when added to *VertexFormat* (by *addProperty()* method) is registered with an unique name (here *"position"* and *"uv"*, passed via static constants) and once registered, is given an unique ID (stored in *'uvID'*). The former can be used when writing shaders and the later is useful for efficiently accessing each property in AS3 code (more on these later).
+
+Creating a custom geometry
+--------------------------
+
+
 
 Adding property accessors
 -------------------------
