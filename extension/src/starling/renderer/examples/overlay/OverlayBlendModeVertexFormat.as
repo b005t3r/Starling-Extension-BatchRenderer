@@ -9,20 +9,16 @@ import starling.renderer.VertexFormat;
 public class OverlayBlendModeVertexFormat extends VertexFormat {
     public static const cachedInstance:OverlayBlendModeVertexFormat = new OverlayBlendModeVertexFormat();
 
-    public static const POSITION:String     = "position";
     public static const TOP_UV:String       = "uvTop";
     public static const BOTTOM_UV:String    = "uvBottom";
 
     // fast access members
-    public var positionID:int;
-    public var uvTopID:int;
-    public var uvBottomID:int;
+    public var uvTopID:int, uvBottomID:int;
 
     public function OverlayBlendModeVertexFormat() {
         if(cachedInstance != null)
             throw new Error("don't create a new instance, use 'OverlayBlendModeVertexFormat.cachedInstance' instead");
 
-        positionID  = addProperty(POSITION, 2);  // x, y; id: 0
         uvTopID     = addProperty(TOP_UV, 2);    // u, v; id: 1
         uvBottomID  = addProperty(BOTTOM_UV, 2); // u, v; id: 2
     }

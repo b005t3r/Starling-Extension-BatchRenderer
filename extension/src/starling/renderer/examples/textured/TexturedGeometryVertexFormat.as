@@ -9,17 +9,15 @@ import starling.renderer.VertexFormat;
 public class TexturedGeometryVertexFormat extends VertexFormat {
     public static const cachedInstance:TexturedGeometryVertexFormat = new TexturedGeometryVertexFormat();
 
-    public static const POSITION:String         = "position";
-    public static const UV:String               = "uv";
+    public static const UV:String = "uv";
 
-    public var positionID:int, uvID:int;
+    public var uvID:int;
 
     public function TexturedGeometryVertexFormat() {
         if(cachedInstance != null)
             throw new Error("don't create a new instance, use 'TexturedGeometryVertexFormat.cachedInstance' instead");
 
-        positionID  = addProperty(POSITION, 2);  // x, y; id: 0
-        uvID        = addProperty(UV, 2);        // u, v; id: 1
+        uvID = addProperty(UV, 2);        // u, v; id: 1
     }
 }
 }

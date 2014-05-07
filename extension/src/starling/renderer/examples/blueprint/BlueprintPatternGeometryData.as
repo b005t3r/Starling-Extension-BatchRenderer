@@ -8,14 +8,9 @@ import flash.geom.Matrix;
 import flash.geom.Point;
 
 import starling.renderer.GeometryData;
-import starling.renderer.renderer_internal;
 import starling.utils.MatrixUtil;
 
-use namespace renderer_internal;
-
 public class BlueprintPatternGeometryData extends GeometryData {
-    private static var _helperPoint:Point = new Point();
-
     public function BlueprintPatternGeometryData() {
         super(BlueprintPatternVertexFormat.cachedInstance);
     }
@@ -53,69 +48,96 @@ public class BlueprintPatternGeometryData extends GeometryData {
             setVertexData(i, BlueprintPatternVertexFormat.cachedInstance.lineSizesID, borderWidth, markWidth, markLength, markSpacing);
     }
 
-    override renderer_internal function appendVertexData(vertex:int, output:Vector.<Number>, matrix:Matrix = null):void {
-        if(matrix == null)
-            super.appendVertexData(vertex, output);
+    override public function uploadVertexData(buffer:Vector.<Number>, startIndex:int, matrix:Matrix = null):Boolean {
+        var bufferChanged:Boolean = false;
 
-        var vertexSize:int      = vertexFormat.totalSize;
-        var offset:int          = vertexSize * vertex;
-        var currentLength:int   = output.length;
+        const vertexSize:int    = _vertexFormat.totalSize;
+        const boundsOffset:int  = _vertexFormat.getOffset(BlueprintPatternVertexFormat.cachedInstance.boundsID);
 
-        var positionIndex:int   = vertexFormat.getOffset(BlueprintPatternVertexFormat.cachedInstance.positionID);
-        var boundsIndex:int     = vertexFormat.getOffset(BlueprintPatternVertexFormat.cachedInstance.boundsID);
-
-        for(var i:int = 0; i < vertexSize; i++) {
-            if(i == positionIndex) {
-                var x:Number            = vertexRawData[offset + i];
-                var y:Number            = vertexRawData[offset + i + 1];
+        var count:int = _vertexRawData.length;
+        for(var i:int = 0, j:int = startIndex; i < count; i++, j++) {
+            // transform position - first and second component of each vertex
+            if(matrix != null && ((i % vertexSize) == 0)) {
+                var x:Number            = _vertexRawData[i];
+                var y:Number            = _vertexRawData[i + 1];
                 var newPosition:Point   = MatrixUtil.transformCoords(matrix, x, y, _helperPoint);
 
-                output[currentLength + i]       = newPosition.x;
-                output[currentLength + i + 1]   = newPosition.y;
+                if(buffer[j] != newPosition.x) {
+                    buffer[j] = newPosition.x;
+                    bufferChanged = true;
+                }
+
+                ++j;
+
+                if(buffer[j] != newPosition.y) {
+                    buffer[j] = newPosition.y;
+                    bufferChanged = true;
+                }
 
                 ++i;
             }
-            else if(i == boundsIndex) {
-                output.length += 3;
+            else if(matrix != null && ((i % vertexSize) == boundsOffset)) {
+                var minX:Number     = _vertexRawData[i];
+                var maxX:Number     = _vertexRawData[i + 1];
+                var minY:Number     = _vertexRawData[i + 2];
+                var maxY:Number     = _vertexRawData[i + 3];
 
-                var minX:Number                 = vertexRawData[offset + i];
-                var minY:Number                 = vertexRawData[offset + i + 2];
-                var newMinPosition:Point        = MatrixUtil.transformCoords(matrix, minX, minY, _helperPoint);
+                var newMin:Point    = MatrixUtil.transformCoords(matrix, minX, minY, _helperPoint);
+                minX                = newMin.x;
+                minY                = newMin.y;
 
-                minX = newMinPosition.x;
-                minY = newMinPosition.y;
+                var newMax:Point    = MatrixUtil.transformCoords(matrix, maxX, maxY, _helperPoint);
+                maxX                = newMax.x;
+                maxY                = newMax.y;
 
-                var maxX:Number                 = vertexRawData[offset + i + 1];
-                var maxY:Number                 = vertexRawData[offset + i + 3];
-                var newMaxPosition:Point        = MatrixUtil.transformCoords(matrix, maxX, maxY, _helperPoint);
+                var tmp:Number;
 
-                maxX = newMaxPosition.x;
-                maxY = newMaxPosition.y;
+                if(minX > maxX) { tmp = minX; minX = maxX; maxX = tmp; }
+                if(minY > maxY) { tmp = minY; minY = maxY; maxY = tmp; }
 
-                if(minX < maxX) {
-                    output[currentLength + i]       = minX;
-                    output[currentLength + i + 2]   = maxX;
-                }
-                else {
-                    output[currentLength + i]       = maxX;
-                    output[currentLength + i + 2]   = minX;
+                if(buffer[j] != minX) {
+                    buffer[j] = minX;
+                    bufferChanged = true;
                 }
 
-                if(minY < maxY) {
-                    output[currentLength + i + 1]   = minY;
-                    output[currentLength + i + 3]   = maxY;
+                ++j;
+
+                if(buffer[j] != maxX) {
+                    buffer[j] = maxX;
+                    bufferChanged = true;
                 }
-                else {
-                    output[currentLength + i + 1]   = maxY;
-                    output[currentLength + i + 3]   = minY;
+
+                ++j;
+
+                if(buffer[j] != minY) {
+                    buffer[j] = minY;
+                    bufferChanged = true;
+                }
+
+                ++j;
+
+                if(buffer[j] != maxY) {
+                    buffer[j] = maxY;
+                    bufferChanged = true;
                 }
 
                 i += 3;
             }
             else {
-                output[currentLength + i] = vertexRawData[offset + i];
+                var dataComponent:Number = _vertexRawData[i];
+
+                if(! bufferChanged) {
+                    if(buffer[j] == dataComponent)
+                        continue;
+
+                    bufferChanged = true;
+                }
+
+                buffer[j] = dataComponent;
             }
         }
+
+        return bufferChanged;
     }
 }
 }

@@ -27,8 +27,6 @@ import starling.display.BlendMode;
 import starling.errors.MissingContextError;
 import starling.renderer.constant.ComponentConstant;
 import starling.renderer.constant.RegisterConstant;
-import starling.renderer.GeometryData;
-import starling.renderer.VertexFormat;
 import starling.textures.Texture;
 import starling.utils.Color;
 import starling.utils.MatrixUtil;
@@ -78,7 +76,17 @@ public class BatchRenderer extends EasierAGAL {
     private var _inputTextureNames:Vector.<String>              = new <String>[];
 
     private var _vertexFormat:VertexFormat                      = null;
-    private var _batchedGeometry:GeometryData                   = null;
+
+    private var _geometries:Vector.<IGeometryData>              = new <IGeometryData>[];
+    private var _matrices:Vector.<Matrix>                       = new <Matrix>[];
+
+    private var _vertexRawData:Vector.<Number>                  = new <Number>[];
+    private var _vertexRawDataSize:int                          = 0;
+    private var _triangleData:Vector.<uint>                     = new <uint>[];
+    private var _triangleDataSize:int                           = 0;
+
+    private var _vertexBuffer:VertexBuffer3D                    = null;
+    private var _indexBuffer:IndexBuffer3D                      = null;
 
     private var _registerConstants:Vector.<RegisterConstant>    = new <RegisterConstant>[];
     private var _componentConstants:Vector.<ComponentConstant>  = new <ComponentConstant>[];
@@ -90,7 +98,6 @@ public class BatchRenderer extends EasierAGAL {
 
     public function BatchRenderer(vertexFormat:VertexFormat) {
         _vertexFormat = vertexFormat;
-        _batchedGeometry = new GeometryData(vertexFormat);
     }
 
     /** Renders geometry data to back buffer using Starling's RenderSupport. */
@@ -100,9 +107,13 @@ public class BatchRenderer extends EasierAGAL {
         if(context == null)
             throw new MissingContextError();
 
-        var buffersReady:Boolean = _batchedGeometry.createBuffers(context);
+        var changed:Boolean = cacheGeometryData();
 
-        if(! buffersReady) return;
+        if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+            return;
+
+        if(changed)
+            createBuffers(context);
 
         // always call this method when you write custom rendering code!
         // it causes all previously batched quads/images to render.
@@ -117,17 +128,17 @@ public class BatchRenderer extends EasierAGAL {
         // activate program (shader) and set the required buffers, constants, texture
         context.setProgram(upload(context));
 
-        _batchedGeometry.setVertexBuffers(context);
+        setVertexBuffers(context);
         setInputTextures(context);
 
         context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, support.mvpMatrix3D, true); // vc0-vc3
         setProgramConstants(context, 4, 0);
 
         // render
-        context.drawTriangles(_batchedGeometry.indexBuffer, 0, _batchedGeometry.triangleData.length / 3);
+        context.drawTriangles(_indexBuffer, 0, _triangleDataSize / 3);
 
         unsetInputTextures(context);
-        _batchedGeometry.unsetVertexBuffers(context);
+        unsetVertexBuffers(context);
     }
 
     /** Renders geometry data to texture. Clears the texture first (Stage3D requirement). */
@@ -137,9 +148,13 @@ public class BatchRenderer extends EasierAGAL {
         if(context == null)
             throw new MissingContextError();
 
-        var buffersReady:Boolean = _batchedGeometry.createBuffers(context);
+        var changed:Boolean = cacheGeometryData();
 
-        if(! buffersReady) return;
+        if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+            return;
+
+        if(changed)
+            createBuffers(context);
 
         // render to output texture and clear it
         context.setRenderToTexture(outputTexture.base);
@@ -161,29 +176,32 @@ public class BatchRenderer extends EasierAGAL {
         // activate program (shader) and set the required buffers, constants, texture
         context.setProgram(upload(context));
 
-        _batchedGeometry.setVertexBuffers(context);
+        setVertexBuffers(context);
         setInputTextures(context);
 
         context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); // vc0-vc3
         setProgramConstants(context, 4, 0);
 
         // render
-        context.drawTriangles(_batchedGeometry.indexBuffer, 0, _batchedGeometry.triangleData.length / 3);
+        context.drawTriangles(_indexBuffer, 0, _triangleDataSize / 3);
 
         unsetInputTextures(context);
-        _batchedGeometry.unsetVertexBuffers(context);
+        unsetVertexBuffers(context);
     }
 
-    public function appendGeometry(geometry:GeometryData, matrix:Matrix = null, positionID:int = 0):void {
-        _batchedGeometry.append(geometry, matrix, positionID);
+    public function appendGeometry(geometry:GeometryData, matrix:Matrix = null):void {
+        _geometries[_geometries.length] = geometry;
+        _matrices[_matrices.length]     = matrix
     }
 
     public function resetGeometry():void {
-        _batchedGeometry.clear();
+        _geometries.length = 0;
+        _matrices.length = 0;
     }
 
     override public function dispose():void {
-        _batchedGeometry.dispose();
+        if(_vertexBuffer != null) _vertexBuffer.dispose();
+        if(_indexBuffer != null) _indexBuffer.dispose();
 
         super.dispose();
     }
@@ -216,17 +234,17 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Provided a registered texture name, returns its sampler index. */
-    renderer_internal function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
+    public function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
 
     /** Returns a texture registered with the name provided. */
-    renderer_internal function getInputTexture(name:String):Texture {
+    public function getInputTexture(name:String):Texture {
         var index:int = getInputTextureIndex(name);
 
         return index >= 0 ? _inputTextures[index] : null;
     }
 
     /** Registers a new texture (or unregisters an old one, if null) using the name provided. */
-    renderer_internal function setInputTexture(name:String, texture:Texture):void {
+    public function setInputTexture(name:String, texture:Texture):void {
         var index:int = getInputTextureIndex(name);
 
         if(index >= 0) {
@@ -246,17 +264,17 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Adds a new constant which will be passed to the shader program (Vertex or Fragment) as one, 4-component
      * register. */
-    renderer_internal function addRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
+    protected function addRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
         _registerConstants[_registerConstants.length] = new RegisterConstant(name, type, x, y, z, w);
     }
 
     /** Adds a new constant which will be passed to the shader program (Vertex or Fragment) as a component. */
-    renderer_internal function addComponentConstant(name:String, type:int, value:Number):void {
+    protected function addComponentConstant(name:String, type:int, value:Number):void {
         _componentConstants[_componentConstants.length] = new ComponentConstant(name, type, value);
     }
 
     /** Removes previously added register constant. */
-    renderer_internal function removeRegisterConstant(name:String, type:int):void {
+    protected  function removeRegisterConstant(name:String, type:int):void {
         var index:int = getRegisterConstantIndex(name, type);
 
         if(index < 0) return;
@@ -265,7 +283,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Removes previously added component constant. */
-    renderer_internal function removeComponentConstant(name:String, type:int, value:Number):void {
+    protected function removeComponentConstant(name:String, type:int, value:Number):void {
         var index:int = getComponentConstantIndex(name, type);
 
         if(index < 0) return;
@@ -274,7 +292,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Modifies previously added register constant's values. */
-    renderer_internal function modifyRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
+    protected function modifyRegisterConstant(name:String, type:int, x:Number, y:Number, z:Number, w:Number):void {
         var index:int                   = getRegisterConstantIndex(name, type);
         var constant:RegisterConstant   = _registerConstants[index];
 
@@ -282,7 +300,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Modifies previously added component constant's values. */
-    renderer_internal function modifyComponentConstant(name:String, type:int, value:Number):void {
+    protected function modifyComponentConstant(name:String, type:int, value:Number):void {
         var index:int                   = getComponentConstantIndex(name, type);
         var constant:ComponentConstant  = _componentConstants[index];
 
@@ -290,7 +308,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Returns a index associated with a register constant with the given name. */
-    renderer_internal function getRegisterConstantIndex(name:String, type:int):int {
+    protected function getRegisterConstantIndex(name:String, type:int):int {
         var count:int = _registerConstants.length;
         for(var i:int = 0; i < count; i++) {
             var constant:RegisterConstant = _registerConstants[i];
@@ -305,7 +323,7 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Returns a index associated with a component constant with the given name. */
-    renderer_internal function getComponentConstantIndex(name:String, type:int):int {
+    protected function getComponentConstantIndex(name:String, type:int):int {
         var count:int = _componentConstants.length;
         for(var i:int = 0; i < count; i++) {
             var constant:ComponentConstant = _componentConstants[i];
@@ -498,6 +516,107 @@ public class BatchRenderer extends EasierAGAL {
 
         _currentProgramType                 = -1;
         _usedFragmentTempRegisters.length   = 0;
+    }
+
+    /** Uploads data from each geometry to an internal buffer. */
+    private function cacheGeometryData():Boolean {
+        var changed:Boolean     = false;
+        _vertexRawDataSize      = 0;
+        _triangleDataSize       = 0;
+        var firstVertexID:int   = 0;
+        var vertexSize:int      = _vertexFormat.totalSize;
+
+        var count:int = _geometries.length;
+        for(var i:int = 0; i < count; i++) {
+            var geometry:IGeometryData  = _geometries[i];
+            var matrix:Matrix           = _matrices[i];
+
+            var requiredVertexBufferSize:int    = geometry.vertexCount * vertexSize;
+            var requiredTriangleBufferSize:int  = geometry.triangleCount * 3;
+
+            ensureBufferCapacities(_vertexRawDataSize + requiredVertexBufferSize, _triangleDataSize + requiredTriangleBufferSize);
+
+            changed = geometry.uploadVertexData(_vertexRawData, _vertexRawDataSize, matrix) || changed;
+            changed = geometry.uploadTriangleData(_triangleData, _triangleDataSize, firstVertexID) || changed;
+
+            _vertexRawDataSize  += requiredVertexBufferSize;
+            _triangleDataSize   += requiredTriangleBufferSize;
+            firstVertexID       += geometry.vertexCount;
+        }
+
+        return changed;
+    }
+
+    /** Ensures each buffer is big enough to hold a given number of elements. */
+    private function ensureBufferCapacities(newVertexRawDataSize:int, newTriangleDataSize:int):void {
+        var oldVertexRawDataSize:int = _vertexRawData.length;
+
+        if (newVertexRawDataSize > oldVertexRawDataSize) {
+            var desiredVertexRawDataSize:int = (oldVertexRawDataSize * 3) / 2 + 1;
+
+            if (desiredVertexRawDataSize < newVertexRawDataSize)
+                desiredVertexRawDataSize = newVertexRawDataSize;
+
+            _vertexRawData.length = desiredVertexRawDataSize;
+        }
+
+        var oldTriangleDataSize:int = _triangleData.length;
+
+        if (newTriangleDataSize > oldTriangleDataSize) {
+            var desiredTriangleDataSize:int = (oldTriangleDataSize * 3) / 2 + 1;
+
+            if (desiredTriangleDataSize < newTriangleDataSize)
+                desiredTriangleDataSize = newTriangleDataSize;
+
+            _triangleData.length = desiredTriangleDataSize;
+        }
+    }
+
+    /** Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers. */
+    private function createBuffers(context:Context3D):void {
+        // can't create and upload an empty buffer
+        if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+            return;
+
+        if (_vertexBuffer) _vertexBuffer.dispose();
+        if (_indexBuffer)  _indexBuffer.dispose();
+
+        var vertexSize:int = _vertexFormat.totalSize;
+        var vertexCount:int = _vertexRawDataSize / vertexSize;
+
+        _vertexBuffer = context.createVertexBuffer(vertexCount, vertexSize);
+        _vertexBuffer.uploadFromVector(_vertexRawData, 0, vertexCount);
+
+        _indexBuffer = context.createIndexBuffer(_triangleDataSize);
+        _indexBuffer.uploadFromVector(_triangleData, 0, _triangleDataSize);
+    }
+
+    private function setVertexBuffers(context:Context3D):void {
+        var count:int = _vertexFormat.propertyCount;
+        for(var i:int = 0; i < count; i++) {
+            var size:int    = _vertexFormat.getSize(i);
+            var offset:int  = _vertexFormat.getOffset(i);
+
+            var bufferFormat:String;
+
+            switch(size) {
+                case 1: bufferFormat = Context3DVertexBufferFormat.FLOAT_1; break;
+                case 2: bufferFormat = Context3DVertexBufferFormat.FLOAT_2; break;
+                case 3: bufferFormat = Context3DVertexBufferFormat.FLOAT_3; break;
+                case 4: bufferFormat = Context3DVertexBufferFormat.FLOAT_4; break;
+
+                default:
+                    throw new Error("vertex data size invalid (" + size + ") for data index: " + i);
+            }
+
+            context.setVertexBufferAt(i, _vertexBuffer, offset, bufferFormat);
+        }
+    }
+
+    private function unsetVertexBuffers(context:Context3D):void {
+        var count:int = _vertexFormat.propertyCount;
+        for(var i:int = 0; i < count; i++)
+            context.setVertexBufferAt(i, null);
     }
 
     private function setOrthographicProjection(x:Number, y:Number, width:Number, height:Number, transform:Matrix = null):Matrix3D {

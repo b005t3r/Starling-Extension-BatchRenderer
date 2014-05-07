@@ -12,11 +12,8 @@ import com.barliesque.shaders.macro.Blend;
 
 import starling.renderer.BatchRenderer;
 import starling.renderer.ShaderType;
-import starling.renderer.renderer_internal;
 import starling.renderer.VertexFormat;
 import starling.textures.Texture;
-
-use namespace renderer_internal;
 
 public class OverlayBlendModeRenderer extends BatchRenderer {
     public static const TOP_TEXTURE:String      = "topTexture";
@@ -44,7 +41,7 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
 
     override protected function vertexShaderCode():void {
         comment("output vertex position");
-        multiply4x4(OUTPUT, getVertexAttribute(OverlayBlendModeVertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
+        multiply4x4(OUTPUT, getVertexAttribute(VertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
 
         comment("pass uv to fragment shader");
         move(uvTop, getVertexAttribute(OverlayBlendModeVertexFormat.TOP_UV));

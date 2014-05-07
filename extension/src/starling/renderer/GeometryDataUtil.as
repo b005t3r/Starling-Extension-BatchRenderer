@@ -11,8 +11,6 @@ import flash.geom.Rectangle;
 import starling.textures.Texture;
 import starling.utils.MatrixUtil;
 
-use namespace renderer_internal;
-
 public class GeometryDataUtil {
     private static var _helperPoint:Point               = new Point();
     private static var _helperVector:Vector.<Number>    = new <Number>[];
@@ -90,7 +88,6 @@ public class GeometryDataUtil {
      * Calculates bounding rect for the given geometry.
      *
      * @param geometry
-     * @param positionID            id of vertex position attribute (x, y)
      * @param vertex                index of the first vertex
      * @param numVertices           number of vertices, if less than zero, all vertices are used
      * @param resultRect            rectangle to put the result in
@@ -98,10 +95,12 @@ public class GeometryDataUtil {
      *
      * @return bounding rectangle
      */
-    public static function getGeometryBounds(geometry:GeometryData, positionID:int, vertex:int = 0, numVertices:int = -1, resultRect:Rectangle = null, transformationMatrix:Matrix = null):Rectangle {
+    public static function getGeometryBounds(geometry:GeometryData, vertex:int = 0, numVertices:int = -1, resultRect:Rectangle = null, transformationMatrix:Matrix = null):Rectangle {
         if(resultRect == null) resultRect = new Rectangle();
 
         if(numVertices < 0) numVertices = geometry.vertexCount - vertex;
+
+        const positionID:int = 0; // for every VertexFormat
 
         if(numVertices == 0) {
             if(transformationMatrix == null) {
@@ -115,7 +114,7 @@ public class GeometryDataUtil {
         else {
             var minX:Number = Number.MAX_VALUE, maxX:Number = -Number.MAX_VALUE;
             var minY:Number = Number.MAX_VALUE, maxY:Number = -Number.MAX_VALUE;
-            var x:Number, y:Number, i:int;
+            var i:int;
 
             if(transformationMatrix == null) {
                 for(i = 0; i < numVertices; ++i) {

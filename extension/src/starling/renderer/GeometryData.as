@@ -4,29 +4,18 @@
  * Time: 10:19
  */
 package starling.renderer {
-import flash.display3D.Context3D;
-import flash.display3D.Context3DVertexBufferFormat;
-import flash.display3D.IndexBuffer3D;
-import flash.display3D.VertexBuffer3D;
 import flash.geom.Matrix;
 import flash.geom.Point;
 
 import starling.utils.MatrixUtil;
 
-use namespace renderer_internal;
+public class GeometryData implements IGeometryData {
+    protected static const _helperPoint:Point       = new Point();
 
-public class GeometryData {
-    private static var _helperPoint:Point               = new Point();
+    protected var _vertexFormat:VertexFormat        = null;
 
-    private var _vertexFormat:VertexFormat              = null;
-
-    private var _buffersDirty:Boolean                   = true;
-
-    renderer_internal var vertexBuffer:VertexBuffer3D   = null;
-    renderer_internal var indexBuffer:IndexBuffer3D     = null;
-
-    renderer_internal var vertexRawData:Vector.<Number> = new <Number>[];
-    renderer_internal var triangleData:Vector.<uint>    = new <uint>[];
+    protected var _vertexRawData:Vector.<Number>    = new <Number>[];
+    protected var _triangleData:Vector.<uint>       = new <uint>[];
 
     public function GeometryData(vertexFormat:VertexFormat) {
         _vertexFormat = vertexFormat;
@@ -34,134 +23,37 @@ public class GeometryData {
 
     public function get vertexFormat():VertexFormat { return _vertexFormat; }
 
-    /** Number of registered vertices. */
-    public function get vertexCount():int { return vertexRawData.length / _vertexFormat.totalSize; }
+    public function get vertexCount():int { return _vertexRawData.length / _vertexFormat.totalSize; }
 
-    public function dispose():void {
-        if(vertexBuffer != null) vertexBuffer.dispose();
-        if(indexBuffer != null) indexBuffer.dispose();
-    }
-
-    /**
-     * Creates new vertex- and index-buffers and uploads our vertex- and index-data into these buffers.
-     *
-     * @return true if there's any geometry to be rendered, false otherwise
-     * */
-    renderer_internal function createBuffers(context:Context3D):Boolean {
-        // can't create and upload an empty buffer
-        if(vertexRawData.length == 0 || triangleData.length == 0)
-            return false;
-
-        // no need to refresh buffers
-        if(! _buffersDirty)
-            return true;
-
-        _buffersDirty = false;
-
-        if (vertexBuffer) vertexBuffer.dispose();
-        if (indexBuffer)  indexBuffer.dispose();
-
-        vertexBuffer = context.createVertexBuffer(vertexCount, _vertexFormat.totalSize);
-        vertexBuffer.uploadFromVector(vertexRawData, 0, vertexCount);
-
-        indexBuffer = context.createIndexBuffer(triangleData.length);
-        indexBuffer.uploadFromVector(triangleData, 0, triangleData.length);
-
-        return true;
-    }
-
-    renderer_internal function setVertexBuffers(context:Context3D):void {
-        var count:int = _vertexFormat.propertyCount;
-        for(var i:int = 0; i < count; i++) {
-            var size:int    = _vertexFormat.getSize(i);
-            var offset:int  = _vertexFormat.getOffset(i);
-
-            var bufferFormat:String;
-
-            switch(size) {
-                case 1: bufferFormat = Context3DVertexBufferFormat.FLOAT_1; break;
-                case 2: bufferFormat = Context3DVertexBufferFormat.FLOAT_2; break;
-                case 3: bufferFormat = Context3DVertexBufferFormat.FLOAT_3; break;
-                case 4: bufferFormat = Context3DVertexBufferFormat.FLOAT_4; break;
-
-                default:
-                    throw new Error("vertex data size invalid (" + size + ") for data index: " + i);
-            }
-
-            context.setVertexBufferAt(i, vertexBuffer, offset, bufferFormat);
-        }
-    }
-
-    renderer_internal function unsetVertexBuffers(context:Context3D):void {
-        var count:int = _vertexFormat.propertyCount;
-        for(var i:int = 0; i < count; i++)
-            context.setVertexBufferAt(i, null);
-    }
-
-    /**
-     * Adds a number of vertices to this renderer and returns the first index added.
-     * These vertices are not yet part of any geometry - call addTriangle() and pass vertex indexes to build
-     * geometry segments.
-     */
-    renderer_internal function addVertices(count:int):int {
-        _buffersDirty = true;
-
+    public function addVertices(count:int):int {
         var firstIndex:int      = vertexCount;
-        vertexRawData.length  += _vertexFormat.totalSize * count;
+        _vertexRawData.length  += _vertexFormat.totalSize * count;
 
         return firstIndex;
     }
 
-    /** Adds a new triangle out of registered vertices. */
-    renderer_internal function addTriangle(v1:int, v2:int, v3:int):void {
-        _buffersDirty = true;
-
-        triangleData[triangleData.length] = v1;
-        triangleData[triangleData.length] = v2;
-        triangleData[triangleData.length] = v3;
-    }
-
-    /**
-     * Returns vertex data associated with a given vertex.
-     *
-     * @param vertex    vertex index
-     * @param id        data id ('va' register index), @see VertexFormat
-     * @param data      optional vector to hold up to 4 Numbers representing the data
-     * @return          vector holding the vertex data
-     */
-    renderer_internal function getVertexData(vertex:int, id:int, data:Vector.<Number> = null):Vector.<Number> {
+    public function getVertexData(vertex:int, id:int, data:Vector.<Number> = null):Vector.<Number> {
         var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
         var size:int    = _vertexFormat.getSize(id);
 
         if(data == null) data = new Vector.<Number>(size);
 
         for(var i:int = 0; i < size; ++i)
-            data[i] = vertexRawData[index + i];
+            data[i] = _vertexRawData[index + i];
 
         return data;
     }
 
-    /**
-     * Sets data associated with the given vertex.
-     * Keep in mind only as many components will be used, as required by the VertexFormat set.
-     *
-     * @param vertex    vertex index
-     * @param id        data id ('va' register index), @see VertexFormat
-     * @param x         first component value
-     * @param y         second component value
-     * @param z         third component value
-     * @param w         fourth component value
-     */
-    renderer_internal function setVertexData(vertex:int, id:int, x:Number, y:Number = NaN, z:Number = NaN, w:Number = NaN):void {
+    public function setVertexData(vertex:int, id:int, x:Number, y:Number = NaN, z:Number = NaN, w:Number = NaN):void {
         var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
         var size:int    = _vertexFormat.getSize(id);
 
         //noinspection FallthroughInSwitchStatementJS
         switch(size) {
-            case 4: if(vertexRawData[index + 3] != w) { _buffersDirty = true; vertexRawData[index + 3] = w; }
-            case 3: if(vertexRawData[index + 2] != z) { _buffersDirty = true; vertexRawData[index + 2] = z; }
-            case 2: if(vertexRawData[index + 1] != y) { _buffersDirty = true; vertexRawData[index + 1] = y; }
-            case 1: if(vertexRawData[index    ] != x) { _buffersDirty = true; vertexRawData[index    ] = x; }
+            case 4: if(_vertexRawData[index + 3] != w) _vertexRawData[index + 3] = w;
+            case 3: if(_vertexRawData[index + 2] != z) _vertexRawData[index + 2] = z;
+            case 2: if(_vertexRawData[index + 1] != y) _vertexRawData[index + 1] = y;
+            case 1: if(_vertexRawData[index    ] != x) _vertexRawData[index    ] = x;
                 break;
 
             default:
@@ -169,47 +61,98 @@ public class GeometryData {
         }
     }
 
-    renderer_internal function appendVertexData(vertex:int, output:Vector.<Number>, matrix:Matrix = null):void {
-        var vertexSize:int      = _vertexFormat.totalSize;
-        var offset:int          = vertexSize * vertex;
-        var currentLength:int   = output.length;
+    public function getVertexDataComponent(vertex:int, id:int, component:int):Number {
+        var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
+        var size:int    = _vertexFormat.getSize(id);
 
-        for(var i:int = 0; i < vertexSize; i++)
-            output[currentLength + i] = vertexRawData[offset + i];
+        if(size <= component)
+            throw ArgumentError("reaching for a non-existent data component, size: " + size + ", component: " + component);
+
+        return _vertexRawData[index + component];
     }
 
-    /**
-     * Appends another geometry data to this geometry data.
-     *
-     * @param geometry geometry data to append
-     * @param matrix transformation matrix for appended geometry, @default null
-     * @param positionID position attribute index of appended geometry (to use with matrix)
-     */
-    renderer_internal function append(geometry:GeometryData, matrix:Matrix = null, positionID:int = 0):void {
-        if(! _vertexFormat.isCompatible(geometry._vertexFormat))
-            throw new ArgumentError("geometries' formats are not compatible");
+    public function setVertexDataComponent(vertex:int, id:int, component:int, value:Number):void {
+        var index:int   = _vertexFormat.totalSize * vertex + _vertexFormat.getOffset(id);
+        var size:int    = _vertexFormat.getSize(id);
 
-        _buffersDirty = true;
+        if(size <= component)
+            throw ArgumentError("trying to set a non-existent data component, size: " + size + ", component: " + component);
 
-        var firstNewVertex:int      = vertexCount;
-        var firstNewTriangle:int    = triangleData.length;
-
-        var count:int = geometry.vertexCount;
-        for(var i:int = 0; i < count; i++)
-            geometry.appendVertexData(i, vertexRawData, matrix);
-
-        count = geometry.triangleData.length;
-        for(i = 0; i < count; i++)
-            triangleData[firstNewTriangle + i] = geometry.triangleData[i] + firstNewVertex;
+        _vertexRawData[index + component] = value;
     }
 
-    /**
-     * Clears this geometry.
-     */
-    renderer_internal function clear():void {
-        _buffersDirty = true;
-        vertexRawData.length = 0;
-        triangleData.length = 0;
+    public function uploadVertexData(buffer:Vector.<Number>, startIndex:int, matrix:Matrix = null):Boolean {
+        var bufferChanged:Boolean = false;
+
+        const vertexSize:int = _vertexFormat.totalSize;
+
+        var count:int = _vertexRawData.length;
+        for(var i:int = 0, j:int = startIndex; i < count; i++, j++) {
+            // transform position - first and second component of each vertex
+            if(matrix != null && ((i % vertexSize) < 2)) {
+                var x:Number            = _vertexRawData[i];
+                var y:Number            = _vertexRawData[i + 1];
+                var newPosition:Point   = MatrixUtil.transformCoords(matrix, x, y, _helperPoint);
+
+                if(buffer[j] != newPosition.x) {
+                    buffer[j] = newPosition.x;
+                    bufferChanged = true;
+                }
+
+                ++j;
+
+                if(buffer[j] != newPosition.y) {
+                    buffer[j] = newPosition.y;
+                    bufferChanged = true;
+                }
+
+                ++i;
+            }
+            else {
+                var dataComponent:Number = _vertexRawData[i];
+
+                if(! bufferChanged) {
+                    if(buffer[j] == dataComponent)
+                        continue;
+
+                    bufferChanged = true;
+                }
+
+                buffer[j] = dataComponent;
+            }
+        }
+
+        return bufferChanged;
+    }
+
+    public function addTriangle(v1:int, v2:int, v3:int):void {
+        _triangleData[_triangleData.length] = v1;
+        _triangleData[_triangleData.length] = v2;
+        _triangleData[_triangleData.length] = v3;
+    }
+
+    public function get triangleCount():int {
+        return _triangleData.length / 3;
+    }
+
+    public function uploadTriangleData(buffer:Vector.<uint>, startIndex:int, firstVertexID:int):Boolean {
+        var bufferChanged:Boolean = false;
+
+        var count:int = _triangleData.length;
+        for(var i:int = 0, j:int = startIndex; i < count; i++, j++) {
+            var vertexID:Number = _triangleData[i] + firstVertexID;
+
+            if(! bufferChanged) {
+                if(buffer[j] == vertexID)
+                    continue;
+
+                bufferChanged = true;
+            }
+
+            buffer[j] = vertexID;
+        }
+
+        return bufferChanged;
     }
 }
 }

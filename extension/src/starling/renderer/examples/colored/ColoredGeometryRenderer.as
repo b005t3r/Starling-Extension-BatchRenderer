@@ -7,9 +7,6 @@ package starling.renderer.examples.colored {
 import com.barliesque.agal.IRegister;
 
 import starling.renderer.*;
-import starling.renderer.VertexFormat;
-
-use namespace renderer_internal;
 
 public class ColoredGeometryRenderer extends BatchRenderer {
     // shader variables
@@ -20,7 +17,7 @@ public class ColoredGeometryRenderer extends BatchRenderer {
     }
 
     override protected function vertexShaderCode():void {
-        multiply4x4(OUTPUT, getVertexAttribute(ColoredGeometryVertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
+        multiply4x4(OUTPUT, getVertexAttribute(VertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
 
         move(color, getVertexAttribute(ColoredGeometryVertexFormat.COLOR));
     }

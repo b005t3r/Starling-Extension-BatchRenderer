@@ -3,6 +3,7 @@ package {
 import demos.BlueprintDemo;
 import demos.MeshDemo;
 import demos.OverlayDemo;
+import demos.SimpleDemo;
 
 import flash.display.Sprite;
 import flash.display.StageAlign;
@@ -29,7 +30,7 @@ public class Main extends Sprite {
         stage.align = StageAlign.TOP_LEFT;
 
         // change this to start a different demo: BlueprintDemo, MeshDemo, OverlayDemo, SimpleDemo
-        var demoClass:Class = OverlayDemo;
+        var demoClass:Class = SimpleDemo;
 
         // make sure you use AIR 4.0, so the auto profile selection works as it should
         var starling:Starling = new Starling(demoClass, stage, null, null, Context3DRenderMode.AUTO, ["baseline", "baselineExtended"]);

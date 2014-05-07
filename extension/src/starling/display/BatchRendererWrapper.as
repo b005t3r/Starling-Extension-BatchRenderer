@@ -11,7 +11,6 @@ import starling.core.RenderSupport;
 import starling.renderer.BatchRenderer;
 import starling.renderer.GeometryData;
 import starling.renderer.GeometryDataUtil;
-import starling.utils.MatrixUtil;
 
 /**
  * Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list.
@@ -55,7 +54,6 @@ public class BatchRendererWrapper extends DisplayObject {
 
     override public function dispose():void {
         if(_ownsRenderer) _renderer.dispose();
-        if(_ownsGeometry) _geometry.dispose();
 
         super.dispose();
     }
@@ -67,7 +65,7 @@ public class BatchRendererWrapper extends DisplayObject {
 
         var transformationMatrix:Matrix = getTransformationMatrix(targetSpace, _matrix);
 
-        return GeometryDataUtil.getGeometryBounds(_geometry, _positionID, 0, -1, resultRect, transformationMatrix);
+        return GeometryDataUtil.getGeometryBounds(_geometry, 0, -1, resultRect, transformationMatrix);
     }
 
     override public function render(support:RenderSupport, parentAlpha:Number):void {
@@ -83,7 +81,7 @@ public class BatchRendererWrapper extends DisplayObject {
             support.popMatrix();
 
             _renderer.resetGeometry();
-            _renderer.appendGeometry(_geometry, transformationMatrix, _positionID);
+            _renderer.appendGeometry(_geometry, transformationMatrix);
 
             var index:int = parent.getChildIndex(this);
 
@@ -95,7 +93,7 @@ public class BatchRendererWrapper extends DisplayObject {
                     break;
 
                 wrapper._batched = true;
-                _renderer.appendGeometry(wrapper._geometry, wrapper.transformationMatrix, wrapper._positionID);
+                _renderer.appendGeometry(wrapper._geometry, wrapper.transformationMatrix);
             }
 
             _renderer.renderToBackBuffer(support, _premultipliedAlpha);

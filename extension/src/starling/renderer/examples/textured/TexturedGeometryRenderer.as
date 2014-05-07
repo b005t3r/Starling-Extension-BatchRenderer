@@ -9,10 +9,7 @@ import com.barliesque.agal.ISampler;
 import com.barliesque.agal.TextureFlag;
 
 import starling.renderer.*;
-import starling.renderer.VertexFormat;
 import starling.textures.Texture;
-
-use namespace renderer_internal;
 
 public class TexturedGeometryRenderer extends BatchRenderer {
     public static const INPUT_TEXTURE:String    = "inputTexture";
@@ -29,7 +26,7 @@ public class TexturedGeometryRenderer extends BatchRenderer {
 
     override protected function vertexShaderCode():void {
         comment("output vertex position");
-        multiply4x4(OUTPUT, getVertexAttribute(TexturedGeometryVertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
+        multiply4x4(OUTPUT, getVertexAttribute(VertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
 
         comment("pass uv to fragment shader");
         move(uv, getVertexAttribute(TexturedGeometryVertexFormat.UV));

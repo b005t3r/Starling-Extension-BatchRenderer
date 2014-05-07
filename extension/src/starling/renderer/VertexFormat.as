@@ -6,10 +6,19 @@
 package starling.renderer {
 
 public class VertexFormat {
+    public static const POSITION:String = "position";
+
     private var _names:Vector.<String>  = new <String>[];
     private var _sizes:Vector.<int>     = new <int>[];
     private var _offsets:Vector.<int>   = new <int>[];
     private var _totalSize:int          = 0;
+
+    /** First attribute of each vertex is 2D position. */
+    public const positionID:int         = 0;
+
+    public function VertexFormat() {
+        addProperty(POSITION, 2); // x, y; id: 0
+    }
 
     public function getPropertyIndex(name:String):int { return _names.indexOf(name); }
 

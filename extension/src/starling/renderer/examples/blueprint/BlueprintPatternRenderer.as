@@ -10,18 +10,9 @@ import com.barliesque.shaders.macro.Utils;
 
 import starling.renderer.*;
 
-use namespace renderer_internal;
-
 public class BlueprintPatternRenderer extends BatchRenderer {
     public static const ZERO:String             = "zero";
     public static const ONE:String              = "one";
-
-    private var _positionID:int;
-    private var _boundsID:int;
-    private var _backgroundColorID:int;
-    private var _borderColorID:int;
-    private var _markColorID:int;
-    private var _lineSizesID:int;
 
     // shader vars
     private var position:IRegister          = VARYING[0];
@@ -46,10 +37,10 @@ public class BlueprintPatternRenderer extends BatchRenderer {
 
     override protected function vertexShaderCode():void {
         comment("output vertex position");
-        multiply4x4(OUTPUT, getVertexAttribute(BlueprintPatternVertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
+        multiply4x4(OUTPUT, getVertexAttribute(VertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
 
         comment("pass position, bounds, background, border and mark colors, and line widths (border and mark) to fragment shader");
-        move(position, getVertexAttribute(BlueprintPatternVertexFormat.POSITION));
+        move(position, getVertexAttribute(VertexFormat.POSITION));
         move(bounds, getVertexAttribute(BlueprintPatternVertexFormat.BOUNDS));
         move(backgroundColor, getVertexAttribute(BlueprintPatternVertexFormat.BACKGROUND_COLOR));
         move(borderColor, getVertexAttribute(BlueprintPatternVertexFormat.BORDER_COLOR));
