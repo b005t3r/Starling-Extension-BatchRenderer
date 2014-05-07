@@ -9,6 +9,7 @@ import com.barliesque.agal.IRegister;
 import com.barliesque.shaders.macro.Utils;
 
 import starling.renderer.*;
+import starling.renderer.vertex.VertexFormat;
 
 public class BlueprintPatternRenderer extends BatchRenderer {
     public static const ZERO:String             = "zero";

@@ -4,7 +4,7 @@
  * Time: 11:12
  */
 package starling.renderer.examples.blueprint {
-import starling.renderer.VertexFormat;
+import starling.renderer.vertex.VertexFormat;
 
 public class BlueprintPatternVertexFormat extends VertexFormat {
     public static const cachedInstance:BlueprintPatternVertexFormat = new BlueprintPatternVertexFormat();

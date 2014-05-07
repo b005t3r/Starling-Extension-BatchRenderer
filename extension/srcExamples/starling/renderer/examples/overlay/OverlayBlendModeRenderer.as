@@ -12,7 +12,7 @@ import com.barliesque.shaders.macro.Blend;
 
 import starling.renderer.BatchRenderer;
 import starling.renderer.ShaderType;
-import starling.renderer.VertexFormat;
+import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
 
 public class OverlayBlendModeRenderer extends BatchRenderer {

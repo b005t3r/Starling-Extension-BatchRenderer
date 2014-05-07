@@ -7,6 +7,7 @@ package starling.renderer.examples.colored {
 import com.barliesque.agal.IRegister;
 
 import starling.renderer.*;
+import starling.renderer.vertex.VertexFormat;
 
 public class ColoredGeometryRenderer extends BatchRenderer {
     // shader variables

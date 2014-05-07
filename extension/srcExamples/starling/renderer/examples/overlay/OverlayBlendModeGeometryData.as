@@ -4,7 +4,7 @@
  * Time: 12:16
  */
 package starling.renderer.examples.overlay {
-import starling.renderer.GeometryData;
+import starling.renderer.geometry.GeometryData;
 
 public class OverlayBlendModeGeometryData extends GeometryData {
     public function OverlayBlendModeGeometryData() {

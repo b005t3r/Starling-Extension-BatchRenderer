@@ -6,7 +6,7 @@
 package starling.renderer.examples.textured {
 import flash.geom.Point;
 
-import starling.renderer.GeometryData;
+import starling.renderer.geometry.GeometryData;
 
 public class TexturedGeometryData extends GeometryData {
     private static var _helperPoint:Point = new Point();

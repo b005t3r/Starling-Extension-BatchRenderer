@@ -4,7 +4,7 @@
  * Time: 12:54
  */
 package starling.renderer.examples.textured {
-import starling.renderer.VertexFormat;
+import starling.renderer.vertex.VertexFormat;
 
 public class TexturedGeometryVertexFormat extends VertexFormat {
     public static const cachedInstance:TexturedGeometryVertexFormat = new TexturedGeometryVertexFormat();

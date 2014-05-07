@@ -4,7 +4,7 @@
  * Time: 12:46
  */
 package starling.renderer.examples.colored {
-import starling.renderer.GeometryData;
+import starling.renderer.geometry.GeometryData;
 
 public class ColoredGeometryData extends GeometryData {
     public function ColoredGeometryData() {

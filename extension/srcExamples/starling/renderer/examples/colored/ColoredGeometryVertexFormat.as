@@ -4,7 +4,7 @@
  * Time: 12:41
  */
 package starling.renderer.examples.colored {
-import starling.renderer.VertexFormat;
+import starling.renderer.vertex.VertexFormat;
 
 public class ColoredGeometryVertexFormat extends VertexFormat {
     public static const cachedInstance:ColoredGeometryVertexFormat = new ColoredGeometryVertexFormat();

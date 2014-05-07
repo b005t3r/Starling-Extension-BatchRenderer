@@ -7,7 +7,7 @@ package starling.renderer.examples.blueprint {
 import flash.geom.Matrix;
 import flash.geom.Point;
 
-import starling.renderer.GeometryData;
+import starling.renderer.geometry.GeometryData;
 import starling.utils.MatrixUtil;
 
 public class BlueprintPatternGeometryData extends GeometryData {

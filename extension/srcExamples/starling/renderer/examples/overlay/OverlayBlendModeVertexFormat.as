@@ -4,7 +4,7 @@
  * Time: 12:09
  */
 package starling.renderer.examples.overlay {
-import starling.renderer.VertexFormat;
+import starling.renderer.vertex.VertexFormat;
 
 public class OverlayBlendModeVertexFormat extends VertexFormat {
     public static const cachedInstance:OverlayBlendModeVertexFormat = new OverlayBlendModeVertexFormat();
