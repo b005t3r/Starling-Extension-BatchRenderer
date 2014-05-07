@@ -4,13 +4,9 @@
  * Time: 12:58
  */
 package starling.renderer.examples.textured {
-import flash.geom.Point;
-
 import starling.renderer.geometry.GeometryData;
 
 public class TexturedGeometryData extends GeometryData {
-    private static var _helperPoint:Point = new Point();
-
     public function TexturedGeometryData() {
         super(TexturedGeometryVertexFormat.cachedInstance);
     }
