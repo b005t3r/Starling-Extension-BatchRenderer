@@ -6,11 +6,12 @@
 package demos {
 import starling.animation.Transitions;
 import starling.animation.Tween;
+import starling.core.Starling;
 import starling.display.BatchRendererWrapper;
 import starling.display.BlendMode;
 import starling.display.Sprite;
 import starling.events.Event;
-import starling.renderer.GeometryDataUtil;
+import starling.renderer.geometry.GeometryDataUtil;
 import starling.renderer.examples.blueprint.BlueprintPatternGeometryData;
 import starling.renderer.examples.blueprint.BlueprintPatternRenderer;
 import starling.renderer.examples.blueprint.BlueprintPatternVertexFormat;
@@ -22,7 +23,7 @@ public class BlueprintDemo extends Sprite{
     }
 
     private function onAddedToStage(event:Event):void {
-        for(var i:int = 0; i < 100;++i) {
+        for(var i:int = 0; i < 25;++i) {
             var wrapper:BatchRendererWrapper = addObject(Math.random() * 400 + 200, Math.random() * 300 + 200, Math.random() * 500 + 100, Math.random() * 400 + 50);
 
             var scaleMin:Number = Math.random() * 0.2 + 0.25;
@@ -31,14 +32,14 @@ public class BlueprintDemo extends Sprite{
             wrapper.scaleX = scaleMin;
             wrapper.scaleY = scaleMin;
 
-            var tween:Tween = new Tween(wrapper, Math.random() * 5 + 2);
-            tween.animate("rotation", 2 * Math.PI); // this add a kind of special effect due to a faulty fragment shader :)
+            var tween:Tween = new Tween(wrapper, Math.random() * 3 + 2);
+            //tween.animate("rotation", 2 * Math.PI); // uncomment to add a kind of special effect due to a faulty fragment shader :)
             tween.animate("scaleX",  scaleMax);
             tween.animate("scaleY", scaleMax);
             tween.repeatCount = 0;
             tween.reverse = true;
             tween.transition = Transitions.EASE_IN_OUT;
-            //Starling.juggler.add(tween);
+            Starling.juggler.add(tween);
         }
     }
 

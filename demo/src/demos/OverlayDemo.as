@@ -8,7 +8,7 @@ import starling.display.BatchRendererWrapper;
 import starling.display.BlendMode;
 import starling.display.Sprite;
 import starling.events.Event;
-import starling.renderer.GeometryDataUtil;
+import starling.renderer.geometry.GeometryDataUtil;
 import starling.renderer.RenderingSettings;
 import starling.renderer.examples.overlay.OverlayBlendModeGeometryData;
 import starling.renderer.examples.overlay.OverlayBlendModeRenderer;

@@ -3,7 +3,7 @@
  * Date: 15/01/14
  * Time: 13:18
  */
-package starling.renderer {
+package starling.renderer.vertex {
 
 public class VertexFormat {
     public static const POSITION:String = "position";

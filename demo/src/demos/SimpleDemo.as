@@ -12,7 +12,7 @@ import starling.display.BlendMode;
 import starling.display.Image;
 import starling.display.Sprite;
 import starling.events.Event;
-import starling.renderer.GeometryDataUtil;
+import starling.renderer.geometry.GeometryDataUtil;
 import starling.renderer.RenderingSettings;
 import starling.renderer.examples.colored.ColoredGeometryData;
 import starling.renderer.examples.colored.ColoredGeometryRenderer;
@@ -99,7 +99,7 @@ public class SimpleDemo extends Sprite {
         _settings.enableClipping(40, 120, 200, 100);
 
         // textured renderer renders to a texture target...
-        _texturedRenderer.appendGeometry(_texturedGeometry);
+        _texturedRenderer.addGeometry(_texturedGeometry);
         _texturedRenderer.renderToTexture(_renderTexture, _settings);
 
         // ... which is displayed using an Image instance

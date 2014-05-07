@@ -1,9 +1,6 @@
 package {
 
-import demos.BlueprintDemo;
-import demos.MeshDemo;
-import demos.OverlayDemo;
-import demos.SimpleDemo;
+import demos.*;
 
 import flash.display.Sprite;
 import flash.display.StageAlign;

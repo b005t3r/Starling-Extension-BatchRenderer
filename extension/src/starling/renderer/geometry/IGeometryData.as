@@ -3,8 +3,10 @@
  * Date: 06/05/14
  * Time: 12:48
  */
-package starling.renderer {
+package starling.renderer.geometry {
 import flash.geom.Matrix;
+
+import starling.renderer.vertex.VertexFormat;
 
 public interface IGeometryData {
 

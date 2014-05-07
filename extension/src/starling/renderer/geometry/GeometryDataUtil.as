@@ -3,7 +3,7 @@
  * Date: 16/01/14
  * Time: 8:48
  */
-package starling.renderer {
+package starling.renderer.geometry {
 import flash.geom.Matrix;
 import flash.geom.Point;
 import flash.geom.Rectangle;

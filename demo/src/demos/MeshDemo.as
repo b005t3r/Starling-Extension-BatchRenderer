@@ -13,11 +13,11 @@ import starling.events.Event;
 import starling.events.Touch;
 import starling.events.TouchEvent;
 import starling.events.TouchPhase;
-import starling.renderer.GeometryDataUtil;
+import starling.renderer.geometry.GeometryDataUtil;
 import starling.renderer.examples.colored.ColoredGeometryData;
-import starling.renderer.examples.colored.ColoredGeometryRenderer;
 import starling.renderer.examples.textured.TexturedGeometryData;
 import starling.renderer.examples.textured.TexturedGeometryRenderer;
+import starling.text.TextField;
 import starling.textures.Texture;
 import starling.utils.Color;
 
@@ -36,6 +36,11 @@ public class MeshDemo extends Sprite {
     }
 
     private function onAddedToStage(event:Event):void {
+        var textField:TextField = new TextField(200, 40, "Drag vertices to deform mesh");
+        textField.alignPivot();
+        textField.x = 400; textField.y = 520;
+        addChild(textField);
+
         _texturedGeometry = new TexturedGeometryData();
 
         var texturedRenderer:TexturedGeometryRenderer = new TexturedGeometryRenderer();

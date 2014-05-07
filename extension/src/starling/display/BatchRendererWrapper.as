@@ -9,8 +9,8 @@ import flash.geom.Rectangle;
 
 import starling.core.RenderSupport;
 import starling.renderer.BatchRenderer;
-import starling.renderer.GeometryData;
-import starling.renderer.GeometryDataUtil;
+import starling.renderer.geometry.GeometryData;
+import starling.renderer.geometry.GeometryDataUtil;
 
 /**
  * Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list.
