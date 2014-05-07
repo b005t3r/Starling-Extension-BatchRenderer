@@ -20,85 +20,84 @@ Batch Renderer is an extension for Starling Framework - a GPU powered, 2D render
 
 So where do we start?
 
-First subclass it, like so...
+First subclass the necassary classes, like so...
 ```as3
-use namespace renderer_internal;
 
-public class TexturedGeometryRenderer extends BatchRenderer {
-    public static const POSITION:String         = "position";
-    public static const UV:String               = "uv";
+// your geometry's vertex format - what data each vertex stores
+public class TexturedGeometryVertexFormat extends VertexFormat {
+    public static const cachedInstance:TexturedGeometryVertexFormat = new TexturedGeometryVertexFormat();
 
-    public static const INPUT_TEXTURE:String    = "inputTexture";
+    public static const UV:String = "uv";
 
-    private var _positionID:int, _uvID:int;
+    public var uvID:int;
 
-    // shader variables
-    private var uv:IRegister = VARYING[0];  // v0 is used to pass interpolated uv from vertex to fragment shader
-
-    public function TexturedGeometryRenderer() {
-        setVertexFormat(createVertexFormat());
-    }
-
-    public function get inputTexture():Texture { return getInputTexture(INPUT_TEXTURE); }
-    public function set inputTexture(value:Texture):void { setInputTexture(INPUT_TEXTURE, value); }
-
-    public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _positionID, position); }
-    public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, _positionID, x, y); }
-
-    public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvID, uv); }
-    public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvID, u, v); }
-
-    override protected function vertexShaderCode():void {
-        comment("output vertex position");
-        multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));
-
-        comment("pass uv to fragment shader");
-        move(uv, getVertexAttribute(UV));
-    }
-
-    override protected function fragmentShaderCode():void {
-        var input:ISampler = getTextureSampler(INPUT_TEXTURE);
-
-        comment("sample the texture and send resulting color to the output");
-        sampleTexture(OUTPUT, uv, input, [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_LINEAR, TextureFlag.MIP_NONE]);
-    }
-
-    private function createVertexFormat():VertexFormat {
-        var format:VertexFormat = new VertexFormat();
-
-        _positionID = format.addProperty(POSITION, 2);  // x, y; id: 0
-        _uvID       = format.addProperty(UV, 2);        // u, v; id: 1
-
-        return format;
+    public function TexturedGeometryVertexFormat() {
+        if(cachedInstance != null) throw new Error("format already initialized");
+        
+        // note: every vertex format has 2D position property added by default in the base class
+        uvID = addProperty(UV, 2); // u, v; id: 1
     }
 }
 
+// your geometry - stores vertices and triangles to be rendered
+public class TexturedGeometryData extends GeometryData {
+    public function TexturedGeometryData() {
+        super(TexturedGeometryVertexFormat.cachedInstance);
+    }
+
+    public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, TexturedGeometryVertexFormat.cachedInstance.positionID, position); }
+    public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, TexturedGeometryVertexFormat.cachedInstance.positionID, x, y); }
+
+    public function getVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, TexturedGeometryVertexFormat.cachedInstance.uvID, uv); }
+    public function setVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, TexturedGeometryVertexFormat.cachedInstance.uvID, u, v); }
+}
+
+// your geometry's renderer - a pair of vertex and fragment shaders basically
+public class TexturedGeometryRenderer extends BatchRenderer {
+    public function TexturedGeometryRenderer() {
+        super(TexturedGeometryVertexFormat.cachedInstance);
+    }
+
+    override protected function vertexShaderCode():void {
+        // your vertex shader code here
+    }
+
+    override protected function fragmentShaderCode():void {
+        // your fragment
+    }
+}
 ```
 
 ... and use it in your code:
 
 ```as3
 // add a new quad
-var vertex:int = BatchRendererUtil.addQuad(texturedRenderer);                    
+var renderer:TexturedGeometryRenderer = new TexturedGeometryRenderer();
+var geometry:TexturedGeometryData = new TexturedGeometryData();
+
+var vertex:int = BatchRendererUtil.addQuad(geometry);                    
 
 // setup Quad's vertices position...
-texturedRenderer.setVertexPosition(vertex    ,  0,    0);                
-texturedRenderer.setVertexPosition(vertex + 1, 100,   0);                
-texturedRenderer.setVertexPosition(vertex + 2,   0, 100);                
-texturedRenderer.setVertexPosition(vertex + 3, 100, 100);                
+geometry.setVertexPosition(vertex    ,  0,    0);                
+geometry.setVertexPosition(vertex + 1, 100,   0);                
+geometry.setVertexPosition(vertex + 2,   0, 100);                
+geometry.setVertexPosition(vertex + 3, 100, 100);                
                                  
 // ... UV mapping...                                                                         
-texturedRenderer.setVertexUV(vertex    , 0, 0);                          
-texturedRenderer.setVertexUV(vertex + 1, 1, 0);                          
-texturedRenderer.setVertexUV(vertex + 2, 0, 1);                          
-texturedRenderer.setVertexUV(vertex + 3, 1, 1);                          
+geometry.setVertexUV(vertex    , 0, 0);                          
+geometry.setVertexUV(vertex + 1, 1, 0);                          
+geometry.setVertexUV(vertex + 2, 0, 1);                          
+geometry.setVertexUV(vertex + 3, 1, 1);                          
 
 // ... and an input texture
-texturedRenderer.inputTexture = Texture.fromBitmap(new AmazingBitmap());
+renderer.inputTexture = Texture.fromBitmap(new AmazingBitmap());
 ```
 
 You can either render to texture target:
 ```as3
+// add geometry to renderer
+renderer.addGeometry(geometry);
+
 // create rendering settings to be used                                                                         
 settings               = new RenderingSettings();                        
 settings.blendMode     = BlendMode.NORMAL;                               
@@ -107,16 +106,15 @@ settings.clearAlpha    = 1.0;
 
 // and render!
 var outputTexture:RenderTexture = new RenderTexture(1024, 1024, false);
-texturedRenderer.renderToTexture(renderTexture, settings);              
+renderer.renderToTexture(renderTexture, settings);              
 ```
 
-... or the back buffer, using Starling's display list:
+... or the back buffer, using Starling's display list and provided wrapper:
 
 ```as3
-var wrapper:BatchRendererWrapper = new BatchRendererWrapper(texturedRenderer);
+var wrapper:BatchRendererWrapper = new BatchRendererWrapper(renderer, geometry);
 addChild(wrapper);
 ```
-
 Doesn't look that scary, does it? Let's have a look at it in details.
 
 Subclassing
