@@ -9,14 +9,14 @@ import flash.geom.Rectangle;
 
 import starling.core.RenderSupport;
 import starling.renderer.BatchRenderer;
-import starling.renderer.geometry.GeometryData;
 import starling.renderer.geometry.GeometryDataUtil;
+import starling.renderer.geometry.IGeometryData;
 
 /** Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list. */
 public class BatchRendererWrapper extends DisplayObject {
     private static var _matrix:Matrix = new Matrix();
 
-    protected var _geometry:GeometryData    = null;
+    protected var _geometry:IGeometryData   = null;
     protected var _renderer:BatchRenderer   = null;
 
     private var _premultipliedAlpha:Boolean = false;
@@ -26,14 +26,14 @@ public class BatchRendererWrapper extends DisplayObject {
     private var _batchable:Boolean          = true;
     private var _batched:Boolean            = false; // used internally when rendering a batch of wrappers
 
-    public function BatchRendererWrapper(geometry:GeometryData, renderer:BatchRenderer) {
+    public function BatchRendererWrapper(geometry:IGeometryData, renderer:BatchRenderer) {
         this.geometry = geometry;
         this.renderer = renderer;
     }
 
     /** Geometry to render. */
-    public function get geometry():GeometryData { return _geometry; }
-    public function set geometry(value:GeometryData):void {
+    public function get geometry():IGeometryData { return _geometry; }
+    public function set geometry(value:IGeometryData):void {
         if(value == null) throw new ArgumentError("geometry cannot be null");
 
         _geometry = value;

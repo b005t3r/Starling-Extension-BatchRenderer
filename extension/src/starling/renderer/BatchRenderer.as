@@ -27,7 +27,6 @@ import starling.display.BlendMode;
 import starling.errors.MissingContextError;
 import starling.renderer.constant.ComponentConstant;
 import starling.renderer.constant.RegisterConstant;
-import starling.renderer.geometry.GeometryData;
 import starling.renderer.geometry.IGeometryData;
 import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
@@ -207,7 +206,7 @@ public class BatchRenderer extends EasierAGAL {
      * @param geometry  geometry to render
      * @param matrix    optional transformation matrix to use when rendering (not copied!), @default null
      */
-    public function addGeometry(geometry:GeometryData, matrix:Matrix = null):void {
+    public function addGeometry(geometry:IGeometryData, matrix:Matrix = null):void {
         _geometries[_geometries.length] = geometry;
         _matrices[_matrices.length]     = matrix
     }

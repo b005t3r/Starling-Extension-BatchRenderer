@@ -155,5 +155,14 @@ public class GeometryData implements IGeometryData {
 
         return bufferChanged;
     }
+
+    public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _vertexFormat.positionID, position); }
+    public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, _vertexFormat.positionID, x, y); }
+
+    public function getVertexX(vertex:int):Number { return getVertexDataComponent(vertex, _vertexFormat.positionID, 0); }
+    public function setVertexX(vertex:int, value:Number):void { setVertexDataComponent(vertex, _vertexFormat.positionID, 0, value); }
+
+    public function getVertexY(vertex:int):Number { return getVertexDataComponent(vertex, _vertexFormat.positionID, 1); }
+    public function setVertexY(vertex:int, value:Number):void { setVertexDataComponent(vertex, _vertexFormat.positionID, 1, value); }
 }
 }

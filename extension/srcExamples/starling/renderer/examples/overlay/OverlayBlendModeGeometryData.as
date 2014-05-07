@@ -11,9 +11,6 @@ public class OverlayBlendModeGeometryData extends GeometryData {
         super(OverlayBlendModeVertexFormat.cachedInstance);
     }
 
-    public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return  getVertexData(vertex, OverlayBlendModeVertexFormat.cachedInstance.positionID, position); }
-    public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, OverlayBlendModeVertexFormat.cachedInstance.positionID, x, y); }
-
     public function getTopLayerVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, OverlayBlendModeVertexFormat.cachedInstance.uvTopID, uv); }
     public function setTopLayerVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, OverlayBlendModeVertexFormat.cachedInstance.uvTopID, u, v); }
 

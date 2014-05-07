@@ -21,7 +21,7 @@ public class GeometryDataUtil {
      * @param geometry
      * @return index of the first vertex added (total of 3 vertices are added)
      */
-    public static function addTriangle(geometry:GeometryData):int {
+    public static function addTriangle(geometry:IGeometryData):int {
         var firstVertex:int = geometry.addVertices(3);
 
         geometry.addTriangle(firstVertex, firstVertex + 1, firstVertex + 2);
@@ -41,7 +41,7 @@ public class GeometryDataUtil {
      * @param geometry
      * @return index of the first vertex added (total of 4 vertices are added)
      */
-    public static function addQuad(geometry:GeometryData):int {
+    public static function addQuad(geometry:IGeometryData):int {
         var firstVertex:int = geometry.addVertices(4);
 
         geometry.addTriangle(firstVertex    , firstVertex + 1, firstVertex + 2);
@@ -66,7 +66,7 @@ public class GeometryDataUtil {
      * @param height height of the mesh, in vertices
      * @return
      */
-    public static function addRectangularMesh(geometry:GeometryData, width:int, height:int):int {
+    public static function addRectangularMesh(geometry:IGeometryData, width:int, height:int):int {
         if(width <= 1 || height <= 1) throw new ArgumentError("width and height must be greater than one (mesh has to have at least 4 vertices)");
 
         var numVertices:int = width * height;
@@ -95,7 +95,7 @@ public class GeometryDataUtil {
      *
      * @return bounding rectangle
      */
-    public static function getGeometryBounds(geometry:GeometryData, vertex:int = 0, numVertices:int = -1, resultRect:Rectangle = null, transformationMatrix:Matrix = null):Rectangle {
+    public static function getGeometryBounds(geometry:IGeometryData, vertex:int = 0, numVertices:int = -1, resultRect:Rectangle = null, transformationMatrix:Matrix = null):Rectangle {
         if(resultRect == null) resultRect = new Rectangle();
 
         if(numVertices < 0) numVertices = geometry.vertexCount - vertex;
@@ -145,7 +145,7 @@ public class GeometryDataUtil {
         return resultRect;
     }
 
-    public static function adjustUV(geometry:GeometryData, texture:Texture, uvID:int, vertex:int = 0, numVertices:int = -1):void {
+    public static function adjustUV(geometry:IGeometryData, texture:Texture, uvID:int, vertex:int = 0, numVertices:int = -1):void {
         throw new Error("currently not supported, needs SubTexture.transformationMatrix to be added in Starling");
     }
 }

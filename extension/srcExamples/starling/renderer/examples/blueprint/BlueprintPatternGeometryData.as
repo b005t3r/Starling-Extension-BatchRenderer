@@ -15,9 +15,6 @@ public class BlueprintPatternGeometryData extends GeometryData {
         super(BlueprintPatternVertexFormat.cachedInstance);
     }
 
-    public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, BlueprintPatternVertexFormat.cachedInstance.positionID, position); }
-    public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, BlueprintPatternVertexFormat.cachedInstance.positionID, x, y); }
-
     public function getGeometryBounds(vertex:int, bounds:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, BlueprintPatternVertexFormat.cachedInstance.boundsID, bounds); }
     public function setGeonetryBounds(vertex:int, numVertices:int, minX:Number, maxX:Number, minY:Number, maxY:Number):void {
         for(var i:int = vertex; i < vertex + numVertices; ++i)
