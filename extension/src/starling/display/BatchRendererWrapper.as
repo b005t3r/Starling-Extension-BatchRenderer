@@ -12,43 +12,50 @@ import starling.renderer.BatchRenderer;
 import starling.renderer.geometry.GeometryData;
 import starling.renderer.geometry.GeometryDataUtil;
 
-/**
- * Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list.
- * Useful for creating custom display objects.
- */
+/** Custom DisplayObject for rendering contents of a BatchRenderer instance using Starling's display list. */
 public class BatchRendererWrapper extends DisplayObject {
     private static var _matrix:Matrix = new Matrix();
 
     protected var _geometry:GeometryData    = null;
     protected var _renderer:BatchRenderer   = null;
-    protected var _positionID:int           = 0;
 
     private var _premultipliedAlpha:Boolean = false;
 
     private var _ownsRenderer:Boolean       = true;
-    private var _ownsGeometry:Boolean       = true;
 
     private var _batchable:Boolean          = true;
     private var _batched:Boolean            = false; // used internally when rendering a batch of wrappers
 
+    public function BatchRendererWrapper(geometry:GeometryData, renderer:BatchRenderer) {
+        this.geometry = geometry;
+        this.renderer = renderer;
+    }
+
+    /** Geometry to render. */
     public function get geometry():GeometryData { return _geometry; }
-    public function set geometry(value:GeometryData):void { _geometry = value; }
+    public function set geometry(value:GeometryData):void {
+        if(value == null) throw new ArgumentError("geometry cannot be null");
 
+        _geometry = value;
+    }
+
+    /** Renderer used to render geometry. */
     public function get renderer():BatchRenderer { return _renderer; }
-    public function set renderer(value:BatchRenderer):void { _renderer = value; }
+    public function set renderer(value:BatchRenderer):void {
+        if(value == null) throw new ArgumentError("renderer cannot be null");
 
-    public function get positionID():int { return _positionID; }
-    public function set positionID(value:int):void { _positionID = value; }
+        _renderer = value;
+    }
 
+    /** Renderer will be disposed along with this display object. @default true */
     public function get ownsRenderer():Boolean { return _ownsRenderer; }
     public function set ownsRenderer(value:Boolean):void { _ownsRenderer = value; }
 
-    public function get ownsGeometry():Boolean { return _ownsGeometry; }
-    public function set ownsGeometry(value:Boolean):void { _ownsGeometry = value; }
-
+    /** Premultiplied alpha. @default false */
     public function get premultipliedAlpha():Boolean { return _premultipliedAlpha; }
     public function set premultipliedAlpha(value:Boolean):void { _premultipliedAlpha = value; }
 
+    /** Should this wrapper be batched along with other wrappers using the same renderer? @default true */
     public function get batchable():Boolean { return _batchable; }
     public function set batchable(value:Boolean):void { _batchable = value; }
 
@@ -79,31 +86,41 @@ public class BatchRendererWrapper extends DisplayObject {
         }
         else if(! _batched) {
             support.popMatrix();
+            {
+                _renderer.removeAllGeometries();
+                _renderer.addGeometry(_geometry, transformationMatrix);
 
-            _renderer.removeAllGeometries();
-            _renderer.addGeometry(_geometry, transformationMatrix);
+                var index:int = parent.getChildIndex(this);
 
-            var index:int = parent.getChildIndex(this);
+                var count:int = parent.numChildren;
+                for(var i:int = index + 1; i < count; ++i) {
+                    var wrapper:BatchRendererWrapper = parent.getChildAt(i) as BatchRendererWrapper;
 
-            var count:int = parent.numChildren;
-            for(var i:int = index + 1; i < count; ++i) {
-                var wrapper:BatchRendererWrapper = parent.getChildAt(i) as BatchRendererWrapper;
+                    if(! canBatch(wrapper))
+                        break;
 
-                if(wrapper == null || ! wrapper._batchable || ! wrapper.geometry.vertexFormat.isCompatible(_geometry.vertexFormat))
-                    break;
+                    wrapper._batched = true;
+                    _renderer.addGeometry(wrapper._geometry, wrapper.transformationMatrix);
+                }
 
-                wrapper._batched = true;
-                _renderer.addGeometry(wrapper._geometry, wrapper.transformationMatrix);
+                _renderer.renderToBackBuffer(support, _premultipliedAlpha);
             }
-
-            _renderer.renderToBackBuffer(support, _premultipliedAlpha);
-
             support.pushMatrix();
-            support.transformMatrix(this); // parent expects this to be set
+            support.transformMatrix(this);
         }
 
         // reset batched flag
         _batched = false;
+    }
+
+    // TODO: this should probably check for renderers compatibility, not only vertex format; different renderers may use the same format
+    /** Can a given wrapper be batched along with this wrapper? */
+    protected function canBatch(wrapper:BatchRendererWrapper):Boolean {
+        return wrapper != null
+            && wrapper._batchable
+            && wrapper._premultipliedAlpha == _premultipliedAlpha
+            && wrapper.geometry.vertexFormat.isCompatible(_geometry.vertexFormat)
+        ;
     }
 }
 }
