@@ -137,14 +137,14 @@ public class TexturedGeometryVertexFormat extends VertexFormat {
 }
 ```
 
-*VertexFormat* is crucial - it tells the *BatchRenderer* implementation what different kinds of data are stored in each vertex. With this (really simple) *TexturedGeometryVertexFormat* each vertex stores two kinds of data: vertex position (set by the base class - every vertex has to store position, duh!) in 2D space (*x*, *y*) and texture mapping coords (set by the subclass - *u*, *v*). Also notice, each kind of data, when added to *VertexFormat* (by *addProperty()* method) is registered with an unique name (here *"position"* and *"uv"*, passed via static constants) and once registered, is given an unique ID (stored in *'uvID'*). The former can be used when writing shaders and the later is useful for efficiently accessing each property in AS3 code (more on these later).
+*VertexFormat* is crucial - it tells the *BatchRenderer* implementation what different kinds of data are stored in each vertex. With this (really simple) *TexturedGeometryVertexFormat* each vertex stores two kinds of data: vertex position (set by the base class - every vertex has to store position, duh!) in 2D space (*x*, *y*) and texture mapping coords (set by the subclass - *u*, *v*). Also notice, each kind of data, when added to *VertexFormat* (by *addProperty()* method) is registered with an unique name (here *"uv"*, passed via static constants) and once registered, is given an unique ID (stored in *'uvID'*). The former can be used when writing shaders and the later is useful for efficiently accessing each property in AS3 code (more on these later).
 
 Also notice the singleton-like implementation - there's no need to create more than one instance of custom vertex format, so a static cachedInstance member is introduced. 
 
 Creating a custom geometry
 --------------------------
 
-With *VertexFormat* ready, it's time to create. Please note subclassing is not necessary - you could use *GeometryData* instance and pass your custom vertex format in the constructor. However, creating a subclass makes accessing custom geometry properties more easy and clear, so this approach is adviced.
+With *VertexFormat* ready, it's time to create the geometry class. Please note subclassing is not necessary - you could use *GeometryData* instance and pass your custom vertex format in the constructor. However, creating a subclass makes accessing custom geometry properties more easy and clear, so this approach is adviced.
 
 ```as3
 public class TexturedGeometryData extends GeometryData {
