@@ -275,17 +275,17 @@ public class BatchRenderer extends EasierAGAL {
     }
 
     /** Provided a registered texture name, returns its sampler index. */
-    public function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
+    protected function getInputTextureIndex(name:String):int { return _inputTextureNames.indexOf(name); }
 
     /** Returns a texture registered with the name provided. */
-    public function getInputTexture(name:String):Texture {
+    protected function getInputTexture(name:String):Texture {
         var index:int = getInputTextureIndex(name);
 
         return index >= 0 ? _inputTextures[index] : null;
     }
 
     /** Registers a new texture (or unregisters an old one, if null) using the name provided. */
-    public function setInputTexture(name:String, texture:Texture):void {
+    protected function setInputTexture(name:String, texture:Texture):void {
         var index:int = getInputTextureIndex(name);
 
         if(index >= 0) {
