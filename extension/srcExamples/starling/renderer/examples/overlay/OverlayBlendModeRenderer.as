@@ -3,7 +3,7 @@
  * Date: 22/01/14
  * Time: 15:47
  */
-package starling.renderer.examples {
+package starling.renderer.examples.overlay {
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
@@ -12,31 +12,22 @@ import com.barliesque.shaders.macro.Blend;
 
 import starling.renderer.BatchRenderer;
 import starling.renderer.ShaderType;
-import starling.renderer.renderer_internal;
 import starling.renderer.vertex.VertexFormat;
 import starling.textures.Texture;
 
-use namespace renderer_internal;
-
 public class OverlayBlendModeRenderer extends BatchRenderer {
-    public static const POSITION:String         = "position";
-    public static const TOP_UV:String           = "uvTop";
-    public static const BOTTOM_UV:String        = "uvBottom";
-
     public static const TOP_TEXTURE:String      = "topTexture";
     public static const BOTTOM_TEXTURE:String   = "bottomTexture";
 
     public static const HALF:String             = "half";
     public static const ONE:String              = "one";
 
-    private var _positionID:int, _uvTopID:int, _uvBottomID:int;
-
     // shader variables
     private var uvBottom:IRegister  = VARYING[0];
     private var uvTop:IRegister     = VARYING[1];
 
     public function OverlayBlendModeRenderer() {
-        setVertexFormat(createVertexFormat());
+        super(OverlayBlendModeVertexFormat.cachedInstance);
 
         addComponentConstant(HALF, ShaderType.FRAGMENT, 0.5);
         addComponentConstant(ONE, ShaderType.FRAGMENT, 1.0);
@@ -48,22 +39,13 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
     public function get topLayerTexture():Texture { return getInputTexture(TOP_TEXTURE); }
     public function set topLayerTexture(value:Texture):void { setInputTexture(TOP_TEXTURE, value); }
 
-    public function getVertexPosition(vertex:int, position:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _positionID, position); }
-    public function setVertexPosition(vertex:int, x:Number, y:Number):void { setVertexData(vertex, _positionID, x, y); }
-
-    public function getTopLayerVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvTopID, uv); }
-    public function setTopLayerVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvTopID, u, v); }
-
-    public function getBottomLayerVertexUV(vertex:int, uv:Vector.<Number> = null):Vector.<Number> { return getVertexData(vertex, _uvBottomID, uv); }
-    public function setBottomLayerVertexUV(vertex:int, u:Number, v:Number):void { setVertexData(vertex, _uvBottomID, u, v); }
-
     override protected function vertexShaderCode():void {
         comment("output vertex position");
-        multiply4x4(OUTPUT, getVertexAttribute(POSITION), getRegisterConstant(PROJECTION_MATRIX));
+        multiply4x4(OUTPUT, getVertexAttribute(VertexFormat.POSITION), getRegisterConstant(PROJECTION_MATRIX));
 
         comment("pass uv to fragment shader");
-        move(uvTop, getVertexAttribute(TOP_UV));
-        move(uvBottom, getVertexAttribute(BOTTOM_UV));
+        move(uvTop, getVertexAttribute(OverlayBlendModeVertexFormat.TOP_UV));
+        move(uvBottom, getVertexAttribute(OverlayBlendModeVertexFormat.BOTTOM_UV));
     }
 
     override protected function fragmentShaderCode():void {
@@ -113,16 +95,6 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         divide(dest.rgb, dest.rgb, dest.a);
 
         freeTempRegister(temp);
-    }
-
-    private function createVertexFormat():VertexFormat {
-        var format:VertexFormat = new VertexFormat();
-
-        _positionID = format.addProperty(POSITION, 2);  // x, y; id: 0
-        _uvTopID    = format.addProperty(TOP_UV, 2);    // u, v; id: 1
-        _uvBottomID = format.addProperty(BOTTOM_UV, 2); // u, v; id: 2
-
-        return format;
     }
 }
 }
