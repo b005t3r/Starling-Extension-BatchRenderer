@@ -49,11 +49,12 @@ public class OverlayDemo extends Sprite {
         overlayGeometry.setBottomLayerVertexUV(vertex + 1, 1, 0);
         overlayGeometry.setBottomLayerVertexUV(vertex + 2, 0, 1);
         overlayGeometry.setBottomLayerVertexUV(vertex + 3, 1, 1);
-
+/*
         var _settings:RenderingSettings = new RenderingSettings();
         _settings.clearColor = 0xcccccc;
         _settings.clearAlpha = 1.0;
         _settings.blendMode = BlendMode.NONE;
+*/
 
         var wrapper:BatchRendererWrapper = new BatchRendererWrapper(overlayGeometry, overlayRenderer);
         addChild(wrapper);

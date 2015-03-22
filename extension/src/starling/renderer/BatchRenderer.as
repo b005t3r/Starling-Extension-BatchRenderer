@@ -196,6 +196,9 @@ public class BatchRenderer extends EasierAGAL {
         // render
         context.drawTriangles(_indexBuffer, 0, _triangleDataSize / 3);
 
+        // WORKAROUND - there is no way to set the previously used render target
+        context.setRenderToBackBuffer();
+
         unsetInputTextures(context);
         unsetVertexBuffers(context);
     }

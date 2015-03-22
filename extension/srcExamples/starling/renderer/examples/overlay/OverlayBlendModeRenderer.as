@@ -66,13 +66,11 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         {
             Blend.overlay(overlayColor, bottomColor, topColor, one, half, temps[0], temps[1], temps[2]);
             move(overlayColor.a, topColor.a);
+
         }
         freeTempRegisters(temps);
 
         alphaBlend(outputColor, bottomColor, overlayColor, one);
-
-        // uncomment for masking the bottom layer with top layer's alpha channel
-        //move(outputColor, overlayColor);
 
         move(OUTPUT, outputColor);
     }
@@ -92,7 +90,7 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         multiply(temp.rgb, blendColor.rgb, blendColor.a);
         multiply(dest.rgb, baseColor.rgb, temp.a);
         add(dest.rgb, temp.rgb, dest.rgb);
-        divide(dest.rgb, dest.rgb, dest.a);
+        //divide(dest.rgb, dest.rgb, dest.a);
 
         freeTempRegister(temp);
     }
