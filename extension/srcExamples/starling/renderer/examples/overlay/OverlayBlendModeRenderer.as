@@ -6,6 +6,7 @@
 package starling.renderer.examples.overlay {
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
+import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
 import com.barliesque.agal.TextureFlag;
 import com.barliesque.shaders.macro.Blend;
@@ -65,12 +66,17 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         var temps:Array = reserveTempRegisters(3);
         {
             Blend.overlay(overlayColor, bottomColor, topColor, one, half, temps[0], temps[1], temps[2]);
-            move(overlayColor.a, topColor.a);
-
+            multiply(IRegister(temps[0]).a, topColor.a, bottomColor.a);
+            move(overlayColor.a, IRegister(temps[0]).a);
         }
         freeTempRegisters(temps);
 
-        alphaBlend(outputColor, bottomColor, overlayColor, one);
+        var tmpColor:IRegister = reserveTempRegister();
+        {
+            alphaBlend(tmpColor, topColor, bottomColor, one);
+            alphaBlend(outputColor, tmpColor, overlayColor, one);
+        }
+        freeTempRegister(tmpColor);
 
         move(OUTPUT, outputColor);
     }
