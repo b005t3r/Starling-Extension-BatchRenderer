@@ -20,11 +20,28 @@ public class LayeredSprite extends Sprite {
     private var _renderTextures:Vector.<RenderTexture>      = new <RenderTexture>[];
     private var _usedTextures:Vector.<Boolean>              = new <Boolean>[];
 
+    private var _minTextureWidth:Number                     = 128;
+    private var _maxTextureWidth:Number                     = Infinity;
+    private var _minTextureHeight:Number                    = 128;
+    private var _maxTextureHeight:Number                    = Infinity;
+
     private var _destinationTexture:RenderTexture;
     private var _wrapperImage:Image;
 
     public function LayeredSprite() {
     }
+
+    public function get minTextureWidth():Number { return _minTextureWidth; }
+    public function set minTextureWidth(value:Number):void { _minTextureWidth = value; }
+
+    public function get maxTextureWidth():Number { return _maxTextureWidth; }
+    public function set maxTextureWidth(value:Number):void { _maxTextureWidth = value; }
+
+    public function get minTextureHeight():Number { return _minTextureHeight; }
+    public function set minTextureHeight(value:Number):void { _minTextureHeight = value; }
+
+    public function get maxTextureHeight():Number { return _maxTextureHeight; }
+    public function set maxTextureHeight(value:Number):void { _maxTextureHeight = value; }
 
     public function addLayer(layer:DisplayObject, name:String):void {
         if(getChildByName(name) != null) throw new ArgumentError("layer with such name already registered");
@@ -167,7 +184,16 @@ public class LayeredSprite extends Sprite {
         if(_destinationTexture == null)
             return true;
 
-        if(_destinationTexture.width != getNextPowerOfTwo(width) || _destinationTexture.height != getNextPowerOfTwo(height))
+        var desiredWidth:Number     = getNextPowerOfTwo(width);
+        var desiredHeight:Number    = getNextPowerOfTwo(height);
+
+        desiredWidth = desiredWidth > _minTextureWidth ? desiredWidth : _minTextureWidth;
+        desiredWidth = desiredWidth < _maxTextureWidth ? desiredWidth : _maxTextureWidth;
+
+        desiredHeight = desiredHeight > _minTextureHeight ? desiredHeight : _minTextureHeight;
+        desiredHeight = desiredHeight < _maxTextureHeight ? desiredHeight : _maxTextureHeight;
+
+        if(_destinationTexture.width != desiredWidth || _destinationTexture.height != desiredHeight)
             return true;
 
         return false;
@@ -185,7 +211,8 @@ public class LayeredSprite extends Sprite {
         _renderTextures.length = _usedTextures.length = 0;
         destinationTexture = getTemporaryRenderTexture();
 
-        trace("New texture size: [" + destinationTexture.width + ", " + destinationTexture.height + "]");
+//        trace("New texture size: [" + destinationTexture.width + ", " + destinationTexture.height + "]");
+//        trace("x: " + x + ", y: " + y);
     }
 }
 }
