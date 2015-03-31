@@ -21,6 +21,25 @@
         <packaging-android />
         <packaging-ios />
       </configuration>
+      <configuration name="BatchRendererMobileDemo" target-platform="Mobile" pure-as="true" main-class="Main" output-file="BatchRendererMobileDemo.swf" output-folder="$MODULE_DIR$/out">
+        <dependencies>
+          <entries>
+            <entry module-name="Starling-Extension-BatchRenderer" build-configuration-name="Starling-Extension-BatchRenderer">
+              <dependency linkage="Merged" />
+            </entry>
+            <entry module-name="starling" build-configuration-name="starling">
+              <dependency linkage="Merged" />
+            </entry>
+          </entries>
+          <sdk name="AIR SDK 4.0" />
+        </dependencies>
+        <compiler-options>
+          <option name="additionalOptions" value="-advanced-telemetry" />
+        </compiler-options>
+        <packaging-air-desktop />
+        <packaging-android enabled="true" use-generated-descriptor="false" custom-descriptor-path="$MODULE_DIR$/BatchRendererDemo-app.xml" package-file-name="BatchRendererMobileDemo" />
+        <packaging-ios package-file-name="BatchRendererMobileDemo" />
+      </configuration>
     </configurations>
     <compiler-options />
   </component>
