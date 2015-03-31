@@ -7,8 +7,8 @@ package starling.display {
 import starling.core.RenderSupport;
 import starling.display.blend.ILayerBlendMode;
 import starling.display.blend.StarlingBlendMode;
-import starling.events.Event;
 import starling.textures.RenderTexture;
+import starling.utils.getNextPowerOfTwo;
 
 use namespace layered_sprite_internal;
 
@@ -17,8 +17,8 @@ public class LayeredSprite extends Sprite {
     private var _layerBlendModes:Vector.<ILayerBlendMode>   = new <ILayerBlendMode>[];
     private var _layerOrderChanged:Boolean                  = true;
 
-    private var _renderTextures:Vector.<RenderTexture>  = new <RenderTexture>[];
-    private var _usedTextures:Vector.<Boolean>          = new <Boolean>[];
+    private var _renderTextures:Vector.<RenderTexture>      = new <RenderTexture>[];
+    private var _usedTextures:Vector.<Boolean>              = new <Boolean>[];
 
     private var _destinationTexture:RenderTexture;
     private var _wrapperImage:Image;
@@ -26,14 +26,13 @@ public class LayeredSprite extends Sprite {
     public function LayeredSprite() {
     }
 
-    public function addLayer(layer:DisplayObject, name:String, touchable:Boolean = false):void {
+    public function addLayer(layer:DisplayObject, name:String):void {
         if(getChildByName(name) != null) throw new ArgumentError("layer with such name already registered");
 
         _layerOrderChanged = true;
         _layerBlendModes[_layerBlendModes.length] = null;
 
         layer.name = name;
-        layer.touchable = touchable;
 
         addChild(layer);
     }
@@ -80,7 +79,7 @@ public class LayeredSprite extends Sprite {
             sortLayers();
         }
 
-        if(_destinationTexture == null || _destinationTexture.width != width || _destinationTexture.height != height)
+        if(needsTextureAdjustment())
             adjustTextureSizes();
 
         _destinationTexture.clear();
@@ -93,10 +92,7 @@ public class LayeredSprite extends Sprite {
             if(! layer.hasVisibleArea)
                 continue;
 
-            var blendMode:ILayerBlendMode = _layerBlendModes[i];
-
-            if(blendMode == null)
-                blendMode = defaultBlendMode;
+            var blendMode:ILayerBlendMode = _layerBlendModes[i] != null ? _layerBlendModes[i] : defaultBlendMode;
 
             blendMode.blend(layer, this);
         }
@@ -104,7 +100,7 @@ public class LayeredSprite extends Sprite {
         _wrapperImage.alpha     = this.alpha;
         _wrapperImage.blendMode = this.blendMode;
 
-        support.batchQuad(_wrapperImage, parentAlpha, _destinationTexture);
+        _wrapperImage.render(support, parentAlpha);
     }
 
     layered_sprite_internal function get destinationTexture():RenderTexture { return _destinationTexture; }
@@ -120,11 +116,7 @@ public class LayeredSprite extends Sprite {
                 throw new ArgumentError("only a RenderTexture allocated by this LayeredSprite and marked as used can be set as a destinationTexture");
 
             _destinationTexture = value;
-
-            if(_wrapperImage == null)
-                _wrapperImage = new Image(_destinationTexture);
-            else
-                _wrapperImage.texture = _destinationTexture;
+            _wrapperImage = new Image(_destinationTexture);
         }
     }
 
@@ -139,7 +131,7 @@ public class LayeredSprite extends Sprite {
         }
 
         _usedTextures[i]    = true;
-        _renderTextures[i]  = new RenderTexture(width, height, true);
+        _renderTextures[i]  = new RenderTexture(getNextPowerOfTwo(width), getNextPowerOfTwo(height), true);
 
         return _renderTextures[i];
     }
@@ -171,6 +163,16 @@ public class LayeredSprite extends Sprite {
         }
     }
 
+    private function needsTextureAdjustment():Boolean {
+        if(_destinationTexture == null)
+            return true;
+
+        if(_destinationTexture.width != getNextPowerOfTwo(width) || _destinationTexture.height != getNextPowerOfTwo(height))
+            return true;
+
+        return false;
+    }
+
     private function adjustTextureSizes():void {
         destinationTexture = null;
 
@@ -182,6 +184,8 @@ public class LayeredSprite extends Sprite {
 
         _renderTextures.length = _usedTextures.length = 0;
         destinationTexture = getTemporaryRenderTexture();
+
+        trace("New texture size: [" + destinationTexture.width + ", " + destinationTexture.height + "]");
     }
 }
 }

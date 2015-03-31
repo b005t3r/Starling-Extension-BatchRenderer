@@ -23,6 +23,7 @@ public class OverlayBlendMode implements ILayerBlendMode {
     private var _settings:RenderingSettings             = new RenderingSettings();
 
     public function OverlayBlendMode() {
+        _settings.premultipliedAlpha = true;
         GeometryDataUtil.addQuad(_geometry);
         _renderer.addGeometry(_geometry);
     }

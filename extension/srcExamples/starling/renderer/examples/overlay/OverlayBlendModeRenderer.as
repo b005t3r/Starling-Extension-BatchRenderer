@@ -5,11 +5,14 @@
  */
 package starling.renderer.examples.overlay {
 import com.barliesque.agal.IComponent;
-import com.barliesque.agal.IRegister;
+import com.barliesque.agal.IComponent;
+import com.barliesque.agal.IField;
+import com.barliesque.agal.IField;
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
 import com.barliesque.agal.TextureFlag;
 import com.barliesque.shaders.macro.Blend;
+import com.barliesque.shaders.macro.Utils;
 
 import starling.renderer.BatchRenderer;
 import starling.renderer.ShaderType;
@@ -20,8 +23,15 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
     public static const TOP_TEXTURE:String      = "topTexture";
     public static const BOTTOM_TEXTURE:String   = "bottomTexture";
 
+    public static const ZERO:String             = "zero";
     public static const HALF:String             = "half";
     public static const ONE:String              = "one";
+
+    private var _topTexturePMA:Boolean          = true;
+    private var _bottomTexturePMA:Boolean       = true;
+    private var _outputPMA:Boolean              = true;
+
+    private var _cachedID:String;
 
     // shader variables
     private var uvBottom:IRegister  = VARYING[0];
@@ -30,6 +40,7 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
     public function OverlayBlendModeRenderer() {
         super(OverlayBlendModeVertexFormat.cachedInstance);
 
+        addComponentConstant(ZERO, ShaderType.FRAGMENT, 0.0);
         addComponentConstant(HALF, ShaderType.FRAGMENT, 0.5);
         addComponentConstant(ONE, ShaderType.FRAGMENT, 1.0);
     }
@@ -39,6 +50,26 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
 
     public function get topLayerTexture():Texture { return getInputTexture(TOP_TEXTURE); }
     public function set topLayerTexture(value:Texture):void { setInputTexture(TOP_TEXTURE, value); }
+
+    public function get topTexturePMA():Boolean { return _topTexturePMA; }
+    public function set topTexturePMA(value:Boolean):void {
+        _topTexturePMA = value;
+        updateCachedID();
+    }
+
+    public function get bottomTexturePMA():Boolean { return _bottomTexturePMA; }
+    public function set bottomTexturePMA(value:Boolean):void {
+        _bottomTexturePMA = value;
+        updateCachedID();
+    }
+
+    public function get outputPMA():Boolean { return _outputPMA; }
+    public function set outputPMA(value:Boolean):void {
+        _outputPMA = value;
+        updateCachedID();
+    }
+
+    override protected function get cachedProgramID():String { return _cachedID; }
 
     override protected function vertexShaderCode():void {
         comment("output vertex position");
@@ -57,31 +88,35 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         var topColor:IRegister      = reserveTempRegister();
         var overlayColor:IRegister  = reserveTempRegister();
         var outputColor:IRegister   = reserveTempRegister();
+        var zero:IComponent         = getComponentConstant(ZERO);
         var half:IComponent         = getComponentConstant(HALF);
         var one:IComponent          = getComponentConstant(ONE);
 
-        sampleTexture(bottomColor, uvBottom, bottomTexture, flags);
-        sampleTexture(topColor, uvTop, topTexture, flags);
+        sampleInputTexture(bottomColor, uvBottom, bottomTexture, _bottomTexturePMA, zero, one, flags);
+        sampleInputTexture(topColor, uvTop, topTexture, _topTexturePMA, zero, one, flags);
 
         var temps:Array = reserveTempRegisters(3);
         {
             Blend.overlay(overlayColor, bottomColor, topColor, one, half, temps[0], temps[1], temps[2]);
-            multiply(IRegister(temps[0]).a, topColor.a, bottomColor.a);
-            move(overlayColor.a, IRegister(temps[0]).a);
+            multiply(overlayColor.a, topColor.a, bottomColor.a);
         }
         freeTempRegisters(temps);
 
-        var tmpColor:IRegister = reserveTempRegister();
+        temps = reserveTempRegisters(2);
         {
-            alphaBlend(tmpColor, topColor, bottomColor, one);
-            alphaBlend(outputColor, tmpColor, overlayColor, one);
+            alphaBlend(temps[0], topColor, bottomColor, zero, one);
+//            move(outputColor, temps[0]);
+            alphaBlend(outputColor, temps[0], overlayColor, zero, one);
+//            alphaBlend(outputColor, bottomColor, topColor, zero, one);
         }
-        freeTempRegister(tmpColor);
+        freeTempRegisters(temps);
 
-        move(OUTPUT, outputColor);
+        //outputPixel(topColor, _outputPMA);
+        //outputPixel(bottomColor, _outputPMA);
+        outputPixel(outputColor, _outputPMA);
     }
 
-    private function alphaBlend(dest:IRegister, baseColor:IRegister, blendColor:IRegister, one:IComponent):void {
+    private function alphaBlend(dest:IRegister, baseColor:IRegister, blendColor:IRegister, zero:IComponent, one:IComponent):void {
         if (dest == baseColor) throw new Error("'dest' and 'baseColor' can not be the same register");
         if (dest == blendColor) throw new Error("'dest' and 'blendColor' can not be the same register");
 
@@ -96,9 +131,48 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         multiply(temp.rgb, blendColor.rgb, blendColor.a);
         multiply(dest.rgb, baseColor.rgb, temp.a);
         add(dest.rgb, temp.rgb, dest.rgb);
-        //divide(dest.rgb, dest.rgb, dest.a);
+        divide(dest.rgb, dest.rgb, dest.a);
+        Utils.clamp(dest.rgb, dest.rgb, zero, one);
 
         freeTempRegister(temp);
+    }
+
+    /** Always returns a non-PMA pixel. */
+    private function sampleInputTexture(dest:IRegister, source1:IField, source2:ISampler, pma:Boolean, zero:IField, one:IField, flags:Array = null):void {
+        sampleTexture(dest, source1, source2, flags);
+
+        // unmultiply
+        if(pma) {
+            divide(dest.rgb, dest.rgb, dest.a);
+            Utils.clamp(dest.rgb, dest.rgb, zero, one);
+        }
+    }
+
+    private function outputPixel(source:IRegister, pma:Boolean):void {
+        if(pma) {
+            var temp:IRegister = reserveTempRegister();
+            {
+                multiply(temp.rgb, source.rgb, source.a);
+                move(temp.a, source.a);
+                move(OUTPUT, temp);
+            }
+            freeTempRegister(temp);
+        }
+        else {
+            move(OUTPUT, source);
+        }
+    }
+
+    private function lerp(dest:IField, min:IField, max:IField, amount:IField):void {
+        var diff:IRegister = reserveTempRegister();
+
+        subtract(diff, max, min);
+        multiply(dest, diff, amount);
+        add(dest, dest, min);
+    }
+
+    private function updateCachedID():void {
+        _cachedID = "OverlayBlendModeRenderer[topPMA : " + _topTexturePMA + ", bottomPMA : " + _bottomTexturePMA + ", outputPMA : " + _outputPMA + "]"
     }
 }
 }

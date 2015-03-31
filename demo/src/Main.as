@@ -28,6 +28,7 @@ public class Main extends Sprite {
 
         // change this to start a different demo: BlueprintDemo, MeshDemo, OverlayDemo, SimpleDemo
         var demoClass:Class = LayeredSpriteDemo;
+        //var demoClass:Class = OverlayDemo;
 
         // make sure you use AIR 4.0, so the auto profile selection works as it should
         var starling:Starling = new Starling(demoClass, stage, null, null, Context3DRenderMode.AUTO, ["baseline", "baselineExtended"]);
