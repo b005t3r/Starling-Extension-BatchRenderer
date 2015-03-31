@@ -102,17 +102,13 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         }
         freeTempRegisters(temps);
 
-        temps = reserveTempRegisters(2);
+        var tempColor:IRegister = reserveTempRegister();
         {
-            alphaBlend(temps[0], topColor, bottomColor, zero, one);
-//            move(outputColor, temps[0]);
-            alphaBlend(outputColor, temps[0], overlayColor, zero, one);
-//            alphaBlend(outputColor, bottomColor, topColor, zero, one);
+            alphaBlend(tempColor, topColor, bottomColor, zero, one);
+            alphaBlend(outputColor, tempColor, overlayColor, zero, one);
         }
-        freeTempRegisters(temps);
+        freeTempRegister(tempColor);
 
-        //outputPixel(topColor, _outputPMA);
-        //outputPixel(bottomColor, _outputPMA);
         outputPixel(outputColor, _outputPMA);
     }
 
@@ -161,14 +157,6 @@ public class OverlayBlendModeRenderer extends BatchRenderer {
         else {
             move(OUTPUT, source);
         }
-    }
-
-    private function lerp(dest:IField, min:IField, max:IField, amount:IField):void {
-        var diff:IRegister = reserveTempRegister();
-
-        subtract(diff, max, min);
-        multiply(dest, diff, amount);
-        add(dest, dest, min);
     }
 
     private function updateCachedID():void {
