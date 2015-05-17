@@ -18,6 +18,7 @@ public class RenderingSettings {
     private var _inputTransformed:Boolean       = false;
     private var _clearColor:uint                = 0x000000;
     private var _clearAlpha:Number              = 0.0;
+    private var _clearOutput:Boolean            = true;
 
     public function get premultipliedAlpha():Boolean { return _premultipliedAlpha; }
     public function set premultipliedAlpha(value:Boolean):void { _premultipliedAlpha = value; }
@@ -49,5 +50,8 @@ public class RenderingSettings {
 
     public function get clearAlpha():Number { return _clearAlpha; }
     public function set clearAlpha(value:Number):void { _clearAlpha = value; }
+
+    public function get clearOutput():Boolean { return _clearOutput; }
+    public function set clearOutput(value:Boolean):void { _clearOutput = value; }
 }
 }

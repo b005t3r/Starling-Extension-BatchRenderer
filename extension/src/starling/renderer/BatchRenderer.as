@@ -169,12 +169,15 @@ public class BatchRenderer extends EasierAGAL {
 
         // render to output texture and clear it
         context.setRenderToTexture(outputTexture.base);
-        context.clear(
-            Color.getRed(settings.clearColor) / 255.0,
-            Color.getGreen(settings.clearColor) / 255.0,
-            Color.getBlue(settings.clearColor) / 255.0,
-            settings.clearAlpha
-        );
+
+        if(settings.clearOutput) {
+            context.clear(
+                Color.getRed(settings.clearColor) / 255.0,
+                Color.getGreen(settings.clearColor) / 255.0,
+                Color.getBlue(settings.clearColor) / 255.0,
+                settings.clearAlpha
+            );
+        }
 
         // setup output regions for rendering and (optionally) transform input geometries
         var m:Matrix3D = setOrthographicProjection(0, 0, outputTexture.nativeWidth, outputTexture.nativeHeight, settings.inputTransform);
@@ -381,6 +384,34 @@ public class BatchRenderer extends EasierAGAL {
         return -1;
     }
 
+    protected function getComponentConstantObject(name:String, type:int):ComponentConstant {
+        var count:int = _componentConstants.length;
+        for(var i:int = 0; i < count; i++) {
+            var constant:ComponentConstant = _componentConstants[i];
+
+            if(type != constant.type || name != constant.name)
+                continue;
+
+            return constant;
+        }
+
+        return null;
+    }
+
+    protected function getRegisterConstantObject(name:String, type:int):RegisterConstant {
+        var count:int = _registerConstants.length;
+        for(var i:int = 0; i < count; i++) {
+            var constant:RegisterConstant = _registerConstants[i];
+
+            if(type != constant.type || name != constant.name)
+                continue;
+
+            return constant;
+        }
+
+        return null;
+    }
+
     /** Return non-null string to share this instance's program with other instances returning the same ID. */
     protected function get cachedProgramID():String { return null; }
 
@@ -417,9 +448,21 @@ public class BatchRenderer extends EasierAGAL {
         if(_currentProgramType != ShaderType.VERTEX && _currentProgramType != ShaderType.FRAGMENT)
             throw new IllegalOperationError("constant registers are available for vertex or fragment programs only");
 
+        var i:int, count:int;
+
+        var registerCount:int = 0;
+
+        count = _registerConstants.length;
+        for(i = 0; i < count; ++i) {
+            var regConstant:RegisterConstant = _registerConstants[i];
+
+            if(_currentProgramType == regConstant.type)
+                ++registerCount;
+        }
+
         var index:int = 0;
-        var count:int = _componentConstants.length;
-        for(var i:int = 0; i < count; i++) {
+        count = _componentConstants.length;
+        for(i = 0; i < count; i++) {
             var constant:ComponentConstant = _componentConstants[i];
 
             if(_currentProgramType != constant.type)
@@ -429,7 +472,7 @@ public class BatchRenderer extends EasierAGAL {
                 ++index;
             }
             else {
-                var regIndex:int    = index / 4; // 4 components per register
+                var regIndex:int    = registerCount + index / 4; // 4 components per register
                 var compIndex:int   = index % 4;
 
                 // first four vc registers are reserved for the transformation matrix

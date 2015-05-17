@@ -84,6 +84,18 @@ public class LayeredSprite extends Sprite {
         _layerOrderChanged = true;
     }
 
+    override public function dispose():void {
+        destinationTexture = null;
+
+        var count:int = _renderTextures.length;
+        for(var i:int = 0; i < count; ++i) {
+            var texture:RenderTexture = _renderTextures[i];
+            texture.dispose();
+        }
+
+        super.dispose();
+    }
+
     override public function render(support:RenderSupport, parentAlpha:Number):void {
         var numChildren:int = this.numChildren;
 

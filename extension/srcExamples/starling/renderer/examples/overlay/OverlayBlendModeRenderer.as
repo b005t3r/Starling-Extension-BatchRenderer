@@ -5,8 +5,6 @@
  */
 package starling.renderer.examples.overlay {
 import com.barliesque.agal.IComponent;
-import com.barliesque.agal.IComponent;
-import com.barliesque.agal.IField;
 import com.barliesque.agal.IField;
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
