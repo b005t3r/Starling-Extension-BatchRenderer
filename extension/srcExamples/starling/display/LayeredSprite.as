@@ -4,6 +4,8 @@
  * Time: 9:44
  */
 package starling.display {
+import flash.geom.Rectangle;
+
 import starling.core.RenderSupport;
 import starling.display.blend.ILayerBlendMode;
 import starling.display.blend.StarlingBlendMode;
@@ -13,6 +15,8 @@ import starling.utils.getNextPowerOfTwo;
 use namespace layered_sprite_internal;
 
 public class LayeredSprite extends Sprite {
+    private static const _helperRect:Rectangle              = new Rectangle();
+
     private var _layerOrder:Vector.<String>                 = new <String>[];
     private var _layerBlendModes:Vector.<ILayerBlendMode>   = new <ILayerBlendMode>[];
     private var _layerOrderChanged:Boolean                  = true;
@@ -196,8 +200,12 @@ public class LayeredSprite extends Sprite {
         if(_destinationTexture == null)
             return true;
 
-        var desiredWidth:Number     = getNextPowerOfTwo(width);
-        var desiredHeight:Number    = getNextPowerOfTwo(height);
+        var rect:Rectangle          = _helperRect;
+
+        getBounds(parent, rect);
+
+        var desiredWidth:Number     = getNextPowerOfTwo(int(rect.width));
+        var desiredHeight:Number    = getNextPowerOfTwo(int(rect.height));
 
         desiredWidth = desiredWidth > _minTextureWidth ? desiredWidth : _minTextureWidth;
         desiredWidth = desiredWidth < _maxTextureWidth ? desiredWidth : _maxTextureWidth;
