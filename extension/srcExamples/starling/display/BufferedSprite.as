@@ -24,7 +24,7 @@ public class BufferedSprite extends Sprite {
     protected var _minTextureHeight:Number  = 64;
     protected var _maxTextureHeight:Number  = Infinity;
 
-    protected var _bufferingEnabled:Boolean = true;
+    private var _bufferingEnabled:Boolean;
 
     public function BufferedSprite() {
     }
@@ -45,39 +45,43 @@ public class BufferedSprite extends Sprite {
     public function set maxTextureHeight(value:Number):void { _maxTextureHeight = value; }
 
     override public function render(support:RenderSupport, parentAlpha:Number):void {
-        var count:int = numChildren;
-
-        if(count == 0)
-            return;
-
         if(! _bufferingEnabled) {
             super.render(support, parentAlpha);
             return;
         }
 
-        var bounds:Rectangle    = getBounds(this, _helperBounds);
-        var matrix:Matrix       = _helperMatrix;
+        var count:int = numChildren;
+        if(count == 0) return;
 
-        matrix.identity();
-        matrix.translate(-bounds.x, -bounds.y);
+        var bounds:Rectangle = getBounds(this, _helperBounds);
+        var matrix:Matrix = _helperMatrix;
 
-        if(! isBufferTextureValid())
+        if(!isBufferTextureValid())
             validateBufferTexture();
 
-        _bufferTexture.drawBundled(function():void {
+        _bufferTexture.drawBundled(function ():void {
             for(var i:int = 0; i < count; ++i) {
                 var child:DisplayObject = getChildAt(i);
 
-                _bufferTexture.draw(child, null);
+                matrix.identity();
+                matrix.translate(-bounds.x, -bounds.y);
+                matrix.concat(child.transformationMatrix);
+
+                _bufferTexture.draw(child, matrix);
             }
         });
 
-        _bufferImage.x          = bounds.x;
-        _bufferImage.y          = bounds.y;
-        _bufferImage.alpha      = this.alpha;
-        _bufferImage.blendMode  = this.blendMode;
+        _bufferImage.x = bounds.x;
+        _bufferImage.y = bounds.y;
 
-        _bufferImage.render(support, parentAlpha);
+        support.pushMatrix();
+        support.transformMatrix(_bufferImage);
+        support.blendMode = BlendMode.NORMAL;
+
+        _bufferImage.render(support, alpha);
+
+        support.blendMode = blendMode;
+        support.popMatrix();
     }
 
     protected function createBufferTexture(width:Number, height:Number):RenderTexture {
