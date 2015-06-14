@@ -9,7 +9,6 @@ import starling.animation.Tween;
 import starling.core.Starling;
 import starling.display.BlendMode;
 import starling.display.Image;
-import starling.display.Quad;
 import starling.display.Sprite;
 import starling.events.Event;
 import starling.renderer.RenderingSettings;
