@@ -54,6 +54,7 @@ public class OverlayBlendMode implements ILayerBlendMode {
         _geometry.setBottomLayerVertexUV(2, 0, 1);
         _geometry.setBottomLayerVertexUV(3, 1, 1);
 
+        destination.clear();
         _renderer.renderToTexture(destination, _settings);
 
         sprite.destinationTexture = destination;
