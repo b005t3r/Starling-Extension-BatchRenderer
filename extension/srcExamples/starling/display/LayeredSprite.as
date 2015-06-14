@@ -101,6 +101,29 @@ public class LayeredSprite extends Sprite {
     }
 
     override public function render(support:RenderSupport, parentAlpha:Number):void {
+        var cr:Rectangle = clipRect;
+
+        if(cr) {
+            var currClipRect:Rectangle = support.pushClipRect(getClipRect(stage, _helperRect));
+            if(currClipRect.isEmpty()) {
+                // empty clipping bounds - no need to render children.
+                support.popClipRect();
+                return;
+            }
+        }
+
+        renderToOutputTexture();
+
+        _wrapperImage.alpha     = this.alpha;
+        _wrapperImage.blendMode = this.blendMode;
+
+        _wrapperImage.render(support, parentAlpha);
+
+        if (cr)
+            support.popClipRect();
+    }
+
+    layered_sprite_internal function renderToOutputTexture():void {
         var numChildren:int = this.numChildren;
 
         if(_layerOrderChanged) {
@@ -122,18 +145,13 @@ public class LayeredSprite extends Sprite {
         for(var i:int = 0; i < numChildren; ++i) {
             var layer:DisplayObject = getChildAt(i);
 
-            if(! layer.hasVisibleArea)
+            if(!layer.hasVisibleArea)
                 continue;
 
             var blendMode:ILayerBlendMode = _layerBlendModes[i] != null ? _layerBlendModes[i] : defaultBlendMode;
 
             blendMode.blend(layer, this);
         }
-
-        _wrapperImage.alpha     = this.alpha;
-        _wrapperImage.blendMode = this.blendMode;
-
-        _wrapperImage.render(support, parentAlpha);
     }
 
     layered_sprite_internal function get destinationTexture():RenderTexture { return _destinationTexture; }
