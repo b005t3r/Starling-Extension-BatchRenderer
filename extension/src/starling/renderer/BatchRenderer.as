@@ -10,6 +10,8 @@ import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.ISampler;
 
+import flash.display.BitmapData;
+
 import flash.display3D.Context3D;
 import flash.display3D.Context3DProgramType;
 import flash.display3D.Context3DVertexBufferFormat;
@@ -149,6 +151,9 @@ public class BatchRenderer extends EasierAGAL {
 
     /** Renders geometry data to texture. Clears the texture first (Stage3D requirement). */
     public function renderToTexture(outputTexture:Texture, settings:RenderingSettings):void {
+        var renderSupport:RenderSupport = new RenderSupport();
+        var oldRenderTarget:Texture = renderSupport.renderTarget;
+
         var context:Context3D = Starling.context;
 
         if(context == null)
@@ -168,7 +173,8 @@ public class BatchRenderer extends EasierAGAL {
         }
 
         // render to output texture and clear it
-        context.setRenderToTexture(outputTexture.base);
+        //context.setRenderToTexture(outputTexture.base);
+        renderSupport.renderTarget = outputTexture;
 
         if(settings.clearOutput) {
             context.clear(
@@ -200,7 +206,73 @@ public class BatchRenderer extends EasierAGAL {
         context.drawTriangles(_indexBuffer, 0, _triangleDataSize / 3);
 
         // WORKAROUND - there is no way to set the previously used render target
-        context.setRenderToBackBuffer();
+        //context.setRenderToBackBuffer();
+        renderSupport.renderTarget = oldRenderTarget;
+
+        unsetInputTextures(context);
+        unsetVertexBuffers(context);
+    }
+
+    /** Renders geometry data to texture. Clears the texture first (Stage3D requirement). */
+    public function renderToBitmap(bitmapData:BitmapData, settings:RenderingSettings):void {
+        var renderSupport:RenderSupport = new RenderSupport();
+        var oldRenderTarget:Texture = renderSupport.renderTarget;
+
+        var context:Context3D = Starling.context;
+
+        if(context == null)
+            throw new MissingContextError();
+
+        if(! _cached) {
+            var changed:Boolean = cacheGeometryData();
+
+            if(_vertexRawDataSize == 0 || _triangleDataSize == 0)
+                return;
+
+            if(changed)
+                createBuffers(context);
+        }
+        else if(_vertexRawDataSize == 0 || _triangleDataSize == 0) {
+            return;
+        }
+
+        // render to output texture and clear it
+        //context.setRenderToBackBuffer();
+        renderSupport.renderTarget = null;
+
+        // always clear the back buffer
+        context.clear(
+            Color.getRed(settings.clearColor) / 255.0,
+            Color.getGreen(settings.clearColor) / 255.0,
+            Color.getBlue(settings.clearColor) / 255.0,
+            settings.clearAlpha
+        );
+
+        // setup output regions for rendering and (optionally) transform input geometries
+        var m:Matrix3D = setOrthographicProjection(0, 0, Starling.current.stage.stageWidth, Starling.current.stage.stageHeight, settings.inputTransform);
+        context.setScissorRectangle(settings.clippingRectangle);
+
+        // set blend mode
+        var blendFactors:Array = BlendMode.getBlendFactors(settings.blendMode, settings.premultipliedAlpha);
+        Starling.context.setBlendFactors(blendFactors[0], blendFactors[1]);
+
+        // activate program (shader) and set the required buffers, constants, texture
+        context.setProgram(upload(context));
+
+        setVertexBuffers(context);
+        setInputTextures(context);
+
+        context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, m, true); // vc0-vc3
+        setProgramConstants(context, 4, 0);
+
+        // render
+        context.drawTriangles(_indexBuffer, 0, _triangleDataSize / 3);
+        context.drawToBitmapData(bitmapData);
+
+        // clear the back buffer after copying its contents to bitmap data
+        context.clear();
+
+        renderSupport.renderTarget = oldRenderTarget;
 
         unsetInputTextures(context);
         unsetVertexBuffers(context);
