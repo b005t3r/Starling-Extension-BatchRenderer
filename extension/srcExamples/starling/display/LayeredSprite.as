@@ -47,6 +47,9 @@ public class LayeredSprite extends Sprite {
     public function get maxTextureHeight():Number { return _maxTextureHeight; }
     public function set maxTextureHeight(value:Number):void { _maxTextureHeight = value; }
 
+    /** Read only, do not modify the contents. */
+    public function get layerOrder():Vector.<String> { return _layerOrder; }
+
     public function addLayer(layer:DisplayObject, name:String):void {
         if(getChildByName(name) != null) throw new ArgumentError("layer with such name already registered");
 
@@ -59,7 +62,16 @@ public class LayeredSprite extends Sprite {
     }
 
     public function getLayer(name:String):DisplayObject {
-        return getChildByName(name) as Sprite;
+        return getChildByName(name);
+    }
+
+    public function getBlendMode(name:String):ILayerBlendMode {
+        var layer:DisplayObject = getChildByName(name);
+
+        if(layer == null)
+            throw new ArgumentError("no such layer: " + name);
+
+        return _layerBlendModes[getChildIndex(layer)];
     }
 
     public function setBlendMode(mode:ILayerBlendMode, layerName:String):void {
