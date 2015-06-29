@@ -8,12 +8,16 @@ import flash.geom.Matrix;
 import flash.geom.Point;
 import flash.geom.Rectangle;
 
+import starling.textures.ConcreteTexture;
+import starling.textures.SubTexture;
+
 import starling.textures.Texture;
 import starling.utils.MatrixUtil;
 
 public class GeometryDataUtil {
     private static var _helperPoint:Point               = new Point();
     private static var _helperVector:Vector.<Number>    = new <Number>[];
+    private static var _helperMatrix:Matrix             = new Matrix();
 
     /**
      * Adds a new triangle to the renderer.
@@ -146,7 +150,44 @@ public class GeometryDataUtil {
     }
 
     public static function adjustUV(geometry:IGeometryData, texture:Texture, uvID:int, vertex:int = 0, numVertices:int = -1):void {
-        throw new Error("currently not supported, needs SubTexture.transformationMatrix to be added in Starling");
+        if(texture is ConcreteTexture)
+            return;
+
+        if(numVertices < 0) numVertices = geometry.vertexCount - vertex;
+
+        _helperMatrix.identity();
+
+        var subTexture:SubTexture = texture as SubTexture;
+
+        while(subTexture != null) {
+            _helperMatrix.concat(subTexture.transformationMatrix);
+            subTexture = subTexture.parent as SubTexture;
+        }
+
+        for(var i:int = 0; i < numVertices; ++i) {
+            geometry.getVertexData(vertex + i, uvID, _helperVector);
+            MatrixUtil.transformCoords(_helperMatrix, _helperVector[0], _helperVector[1], _helperPoint);
+            geometry.setVertexData(vertex + i, uvID, _helperPoint.x, _helperPoint.y);
+        }
+
+        if(texture.frame == null)
+            return;
+
+        if (numVertices != 4)
+            throw new ArgumentError("Textures with a frame can only be used on quads");
+
+        var frame:Rectangle = texture.frame;
+        var deltaRight:Number  = frame.width  + frame.x - texture.width;
+        var deltaBottom:Number = frame.height + frame.y - texture.height;
+
+        geometry.getVertexData(vertex + 0, uvID, _helperVector);
+        geometry.setVertexData(vertex + 0, uvID, _helperVector[0] - frame.x, _helperVector[1] - frame.y);
+        geometry.getVertexData(vertex + 1, uvID, _helperVector);
+        geometry.setVertexData(vertex + 1, uvID, _helperVector[0] - deltaRight, _helperVector[1] - frame.y);
+        geometry.getVertexData(vertex + 2, uvID, _helperVector);
+        geometry.setVertexData(vertex + 2, uvID, _helperVector[0] - frame.x, _helperVector[1] - deltaBottom);
+        geometry.getVertexData(vertex + 3, uvID, _helperVector);
+        geometry.setVertexData(vertex + 3, uvID, _helperVector[0] - deltaRight, _helperVector[1] - deltaBottom);
     }
 }
 }
