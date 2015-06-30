@@ -19,7 +19,7 @@ public class BatchRendererWrapper extends DisplayObject {
     protected var _geometry:IGeometryData   = null;
     protected var _renderer:BatchRenderer   = null;
 
-    private var _premultipliedAlpha:Boolean = false;
+    private var _premultipliedAlpha:Boolean = true;
 
     private var _ownsRenderer:Boolean       = true;
 
